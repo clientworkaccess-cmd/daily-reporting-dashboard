@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), "Inter", "system-ui", sans-serif;
+}
+
+@layer base {
+  * {
+    border-color: #e2e8f0;
+  }
+
+  body {
+    background: #f2f3f6;
+    color: #334155;
+    @apply antialiased;
+  }
+}
