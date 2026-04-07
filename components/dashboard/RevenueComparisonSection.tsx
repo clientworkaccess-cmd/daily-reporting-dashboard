@@ -16,16 +16,16 @@ export function RevenueComparisonSection({
       <div className="grid grid-cols-1 min-[250px]:grid-cols-2 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {locations.map((loc) => {
           const chartRevenue = loc.charts.revenue;
-          const currentFromChart = lastDefinedValue(chartRevenue[chartRevenue.length - 1]);
+          const currentFromChart = lastDefinedValue(chartRevenue[chartRevenue.length - 1]?.points);
           const current =
             isFiniteNumber(loc.revenue) && loc.revenue > 0
               ? loc.revenue
               : currentFromChart;
-          const previousFromChart = lastDefinedValue(chartRevenue[chartRevenue.length - 2]);
+          const previousFromChart = lastDefinedValue(chartRevenue[chartRevenue.length - 2]?.points);
           const previous = isFiniteNumber(loc.lastRevenue)
             ? loc.lastRevenue
             : previousFromChart;
-          const secondPrevious = lastDefinedValue(chartRevenue[chartRevenue.length - 3]);
+          const secondPrevious = lastDefinedValue(chartRevenue[chartRevenue.length - 3]?.points);
 
           return (
             <div key={`${title}-${loc.id}`} className="text-center">

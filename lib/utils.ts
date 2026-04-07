@@ -8,6 +8,7 @@ import type {
   LocationCardData,
   LocationKey,
   ReportingResponse,
+  TrendSeries,
 } from "@/types/dashboard";
 import {
   CHART_METRICS,
@@ -156,15 +157,15 @@ export function buildStaticLines(target: number): ChartPoint[][] {
   );
 }
 
-export function cleanLines(lines: ChartPoint[][]): ChartPoint[][] {
-  return lines.filter((line) => line.some((v) => typeof v === "number"));
+export function cleanLines(lines: TrendSeries[]): TrendSeries[] {
+  return lines.filter((line) => line.points.some((v) => typeof v === "number"));
 }
 
 export function extractTrendLines(
   data: ReportingResponse,
   selectedYear: number,
   selectedMonth: number
-): ChartPoint[][] {
+): TrendSeries[] {
   const datasets = Array.isArray(data.datasets) ? data.datasets : [];
 
   const parsed = datasets
@@ -195,7 +196,12 @@ export function extractTrendLines(
 
   const scoped = parsed
     .slice(Math.max(0, endIndex - 3), endIndex + 1)
-    .map((e) => e.points);
+    .map((e) => ({
+      label: e.date
+        ? e.date.toLocaleString("default", { month: "short" })
+        : "Unknown",
+      points: e.points,
+    }));
   return cleanLines(scoped);
 }
 
@@ -232,11 +238,11 @@ export function createFallbackLocation(
     label: LOCATION_META[id].label,
     ...seed,
     charts: {
-      revenue:   buildStaticLines(seed.revenue),
-      occupancy: buildStaticLines(seed.occupancy),
-      arrears:   buildStaticLines(seed.arrears),
-      insurance: buildStaticLines(seed.insurance),
-      autopay:   buildStaticLines(seed.autopay),
+      revenue:   buildStaticLines(seed.revenue).map((p, i) => ({ label: `Month ${i+1}`, points: p })),
+      occupancy: buildStaticLines(seed.occupancy).map((p, i) => ({ label: `Month ${i+1}`, points: p })),
+      arrears:   buildStaticLines(seed.arrears).map((p, i) => ({ label: `Month ${i+1}`, points: p })),
+      insurance: buildStaticLines(seed.insurance).map((p, i) => ({ label: `Month ${i+1}`, points: p })),
+      autopay:   buildStaticLines(seed.autopay).map((p, i) => ({ label: `Month ${i+1}`, points: p })),
     },
   };
 }
@@ -282,9 +288,9 @@ export function leadBubbleCount(leads: number): number {
 
 // ─── Empty charts helper ──────────────────────────────────────────────────────
 
-export function emptyCharts(): Record<ChartMetric, ChartPoint[][]> {
-  return CHART_METRICS.reduce<Record<ChartMetric, ChartPoint[][]>>(
+export function emptyCharts(): Record<ChartMetric, TrendSeries[]> {
+  return CHART_METRICS.reduce<Record<ChartMetric, TrendSeries[]>>(
     (acc, metric) => { acc[metric] = []; return acc; },
-    {} as Record<ChartMetric, ChartPoint[][]>
+    {} as Record<ChartMetric, TrendSeries[]>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChartPoint } from "@/types/dashboard";
+import type { TrendSeries } from "@/types/dashboard";
 import { cleanLines } from "@/lib/utils";
 import {
   Chart as ChartJS,
@@ -23,7 +23,7 @@ ChartJS.register(
 );
 
 interface MiniTrendChartProps {
-  lines: ChartPoint[][];
+  lines: TrendSeries[];
 }
 
 export function MiniTrendChart({ lines }: MiniTrendChartProps) {
@@ -37,7 +37,7 @@ export function MiniTrendChart({ lines }: MiniTrendChartProps) {
     );
   }
 
-  const pointCount = Math.max(2, ...normalizedLines.map((l) => l.length));
+  const pointCount = Math.max(2, ...normalizedLines.map((l) => l.points.length));
   const labels = Array.from({ length: pointCount }, (_, i) => `${i + 1}`);
 
   const COLORS = ["#89c2ff", "#b495d6", "#6fa9c2", "#66cde0"] as const;
@@ -45,8 +45,8 @@ export function MiniTrendChart({ lines }: MiniTrendChartProps) {
   const chartData = {
     labels,
     datasets: normalizedLines.map((series, idx) => ({
-      label: `Month ${idx + 1}`,
-      data: series,
+      label: series.label,
+      data: series.points,
       borderColor: COLORS[idx % COLORS.length],
       backgroundColor: "transparent",
       borderWidth: idx === normalizedLines.length - 1 ? 2.4 : 1.8,

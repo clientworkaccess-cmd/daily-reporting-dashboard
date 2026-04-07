@@ -9,9 +9,9 @@ import type {
   LocationKey,
   LiveLocation,
   ReportingResponse,
-  ChartPoint,
   ChartMetric,
-  KPISelection
+  KPISelection,
+  TrendSeries
 } from "@/types/dashboard";
 import {
   LIVE_LOCATIONS,
@@ -88,10 +88,10 @@ async function buildLiveLocationCard(
     CHART_METRICS.map(async (metric) => (await fetchReportingData(location, "daily", metric)) as ReportingResponse),
   );
 
-  const charts = CHART_METRICS.reduce<Record<ChartMetric, ChartPoint[][]>>((acc, metric, metricIndex) => {
+  const charts = CHART_METRICS.reduce<Record<ChartMetric, TrendSeries[]>>((acc, metric, metricIndex) => {
     acc[metric] = extractTrendLines(chartResponses[metricIndex], selectedYear, selectedMonth);
     return acc;
-  }, {} as Record<ChartMetric, ChartPoint[][]>);
+  }, {} as Record<ChartMetric, TrendSeries[]>);
 
   return {
     location,

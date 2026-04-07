@@ -28,6 +28,7 @@ import type {
   LocationCardData,
   LocationKey,
   ReportingResponse,
+  TrendSeries,
 } from "@/types/dashboard";
 
 // ─── Build one live location card ─────────────────────────────────────────────
@@ -91,7 +92,7 @@ async function buildLiveLocationCard(
     )
   );
 
-  const charts = CHART_METRICS.reduce<Record<ChartMetric, ChartPoint[][]>>(
+  const charts = CHART_METRICS.reduce<Record<ChartMetric, TrendSeries[]>>(
     (acc, metric, idx) => {
       acc[metric] = extractTrendLines(
         chartResponses[idx],
@@ -100,7 +101,7 @@ async function buildLiveLocationCard(
       );
       return acc;
     },
-    {} as Record<ChartMetric, ChartPoint[][]>
+    {} as Record<ChartMetric, TrendSeries[]>
   );
 
   return {

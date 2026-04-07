@@ -5,6 +5,11 @@ export type LocationKey = LiveLocation | "catawba" | "rock_hill";
 export type ChartMetric = "revenue" | "occupancy" | "arrears" | "insurance" | "autopay";
 export type ChartPoint = number | null;
 
+export interface TrendSeries {
+  label: string;
+  points: ChartPoint[];
+}
+
 // ─── Date selector ────────────────────────────────────────────────────────────
 
 export interface KPISelection {
@@ -47,7 +52,7 @@ export interface LocationCardData {
   insurance: number;
   autopay: number;
   leads: number;
-  charts: Record<ChartMetric, ChartPoint[][]>;
+  charts: Record<ChartMetric, TrendSeries[]>;
 }
 
 // ─── Dashboard state ──────────────────────────────────────────────────────────
