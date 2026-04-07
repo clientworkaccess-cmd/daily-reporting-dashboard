@@ -1,18 +1,59 @@
-export interface DailyReport {
-    id: string;
-    created_at: string;
-    date: string;
-    revenue: number;
-    move_ins: number;
-    move_outs: number;
-    occupancy_rate: number;
-    arrears_rate: number;
-    insurance_rate: number;
-    autopay_rate: number;
-    cac: number;
-    ltv: number;
-    leads: number;
+// ─── Core type aliases ────────────────────────────────────────────────────────
+
+export type LiveLocation = "charlotte" | "houston";
+export type LocationKey = LiveLocation | "catawba" | "rock_hill";
+export type ChartMetric = "revenue" | "occupancy" | "arrears" | "insurance" | "autopay";
+export type ChartPoint = number | null;
+
+// ─── Date selector ────────────────────────────────────────────────────────────
+
+export interface KPISelection {
+  raw: string;
+  day: string;
+  month: string;
+  year: string;
 }
 
-export type Location = "charlotte" | "houston";
-export type ViewType = "daily" | "weekly" | "monthly";
+// ─── API response shapes ──────────────────────────────────────────────────────
+
+export interface KPIResponse {
+  metrics: Record<string, string | number | null | undefined>;
+  availableDates: KPISelection[];
+  selectedDate: string;
+}
+
+export interface ReportingDataset {
+  label?: string;
+  data?: Array<number | null | undefined>;
+}
+
+export interface ReportingResponse {
+  labels?: string[];
+  datasets?: ReportingDataset[];
+}
+
+// ─── Location card ────────────────────────────────────────────────────────────
+
+export interface LocationCardData {
+  id: LocationKey;
+  label: string;
+  revenue: number;
+  lastRevenue: number | null;
+  forecast: number;
+  occupancy: number;
+  moveIns: number;
+  moveOuts: number;
+  arrears: number;
+  insurance: number;
+  autopay: number;
+  leads: number;
+  charts: Record<ChartMetric, ChartPoint[][]>;
+}
+
+// ─── Dashboard state ──────────────────────────────────────────────────────────
+
+export interface DashboardState {
+  years: number[];
+  monthsByYear: Record<number, number[]>;
+  locations: Record<LocationKey, LocationCardData>;
+}
