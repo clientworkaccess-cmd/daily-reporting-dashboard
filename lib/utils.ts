@@ -1,3 +1,5 @@
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 import type {
   ChartMetric,
   ChartPoint,
@@ -14,6 +16,10 @@ import {
   MONTH_NAMES,
   MONTH_SHORT,
 } from "@/lib/constants";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 // ─── Number helpers ───────────────────────────────────────────────────────────
 
