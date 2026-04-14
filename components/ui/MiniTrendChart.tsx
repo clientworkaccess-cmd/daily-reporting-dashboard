@@ -77,11 +77,15 @@ export function MiniTrendChart({ lines }: MiniTrendChartProps) {
         backgroundColor: "rgba(15, 23, 42, 0.92)",
         titleColor: "#ffffff",
         bodyColor: "#e2e8f0",
-        displayColors: true,
+        displayColors: false,
         callbacks: {
           title: (items: any[]) => `Day ${items[0]?.label ?? ""}`,
-          label: (ctx: any) =>
-            `${Number(ctx.raw).toLocaleString("en-US")}`,
+          label: (ctx: any) => {
+            const month = ctx.dataset.label;
+            const value = Number(ctx.raw).toLocaleString("en-US");
+
+            return `${month}: ${value}`;
+          },
         },
       },
     },

@@ -24,13 +24,13 @@ const parsePercent = (val: any): number => {
 // Houston:   daily_reporting_storagefms (primary key: report_report_date)
 const TABLE_MAP: Record<'charlotte' | 'houston', string> = {
     charlotte: 'daily_reporting_my_hub',
-    houston:   'daily_reporting_storagefms',
+    houston: 'daily_reporting_storagefms',
 };
 
 // Each location uses a different column name for its date
 const DATE_FIELD: Record<'charlotte' | 'houston', string> = {
     charlotte: 'report_date',
-    houston:   'report_report_date',
+    houston: 'report_report_date',
 };
 
 const readField = (row: any, keys: string[]) => {
@@ -79,28 +79,28 @@ const hasKpiRowData = (row: any, location: string): boolean => {
 const hasMetricRowData = (row: any, location: string, metricId: string): boolean => {
     if (location === 'charlotte') {
         switch (metricId) {
-            case 'revenue':    return hasValue(row.paymenttotals_mtd);
+            case 'revenue': return hasValue(row.paymenttotals_mtd);
             case 'move_in_out': return hasAnyFieldValue(row, ['activity_moveins_mtd', 'activity_moveouts_mtd']);
-            case 'occupancy':  return hasValue(row.units_occupancyrate);
-            case 'arrears':    return hasAnyFieldValue(row, ['paymentinsurance_mtd', 'paymenttotals_mtd']);
-            case 'insurance':  return hasAnyFieldValue(row, ['paymentother_daily', 'units_occupied']);
-            case 'autopay':    return hasAnyFieldValue(row, ['deposits_achdebit_mtd', 'paymenttotals_mtd']);
-            case 'leads':      return hasAnyFieldValue(row, ['leads_sparefoot_daily', 'leads_phone_daily', 'leads_web_daily', 'leads_walkin_daily']);
-            case 'forecast':   return hasValue(row.paymenttotals_mtd);
-            default:           return hasKpiRowData(row, location);
+            case 'occupancy': return hasValue(row.units_occupancyrate);
+            case 'arrears': return hasAnyFieldValue(row, ['paymentinsurance_mtd', 'paymenttotals_mtd']);
+            case 'insurance': return hasAnyFieldValue(row, ['paymentother_daily', 'units_occupied']);
+            case 'autopay': return hasAnyFieldValue(row, ['deposits_achdebit_mtd', 'paymenttotals_mtd']);
+            case 'leads': return hasAnyFieldValue(row, ['leads_sparefoot_daily', 'leads_phone_daily', 'leads_web_daily', 'leads_walkin_daily']);
+            case 'forecast': return hasValue(row.paymenttotals_mtd);
+            default: return hasKpiRowData(row, location);
         }
     }
     // Houston
     switch (metricId) {
-        case 'revenue':    return hasValue(row.total_revenue_receipts_mtd);
+        case 'revenue': return hasValue(row.total_revenue_receipts_mtd);
         case 'move_in_out': return hasAnyFieldValue(row, ['rental_activity_move_ins_mtd', 'rental_activity_move_outs_mtd']);
-        case 'occupancy':  return hasValue(row.occupancy_statistics_occupied_unit_pct);
-        case 'arrears':    return hasAnyFieldValue(row, ['amount_due_totals_total', 'total_revenue_receipts_mtd']);
-        case 'insurance':  return hasValue(row.insurance_protection_pct_insured);
-        case 'autopay':    return hasAnyFieldValue(row, ['receipts_breakdown_ach_mtd', 'total_revenue_receipts_mtd']);
-        case 'leads':      return hasValue(row.leads_summary_total_leads_mtd);
-        case 'forecast':   return hasValue(row.total_revenue_receipts_mtd);
-        default:           return hasKpiRowData(row, location);
+        case 'occupancy': return hasValue(row.occupancy_statistics_occupied_unit_pct);
+        case 'arrears': return hasAnyFieldValue(row, ['amount_due_totals_total', 'total_revenue_receipts_mtd']);
+        case 'insurance': return hasValue(row.insurance_protection_pct_insured);
+        case 'autopay': return hasAnyFieldValue(row, ['receipts_breakdown_ach_mtd', 'total_revenue_receipts_mtd']);
+        case 'leads': return hasValue(row.leads_summary_total_leads_mtd);
+        case 'forecast': return hasValue(row.total_revenue_receipts_mtd);
+        default: return hasKpiRowData(row, location);
     }
 };
 
@@ -152,33 +152,37 @@ export async function fetchReportingData(location: string, view: string, metric:
                     return parseCurrency(row.paymenttotals_mtd);
                 case 'move_in_out':
                     return (parseInt(row.activity_moveins_mtd) || 0)
-                         - (parseInt(row.activity_moveouts_mtd) || 0);
+                        - (parseInt(row.activity_moveouts_mtd) || 0);
                 case 'occupancy':
                     return parsePercent(row.units_occupancyrate);
+                // case 'arrears': {
+                //     const ins = parseCurrency(row.paymentinsurance_mtd);
+                //     const total = parseCurrency(row.paymenttotals_mtd);
+                //     return total > 0 ? (ins / total) * 100 : 0;
+                // }
                 case 'arrears': {
-                    const ins   = parseCurrency(row.paymentinsurance_mtd);
-                    const total = parseCurrency(row.paymenttotals_mtd);
-                    return total > 0 ? (ins / total) * 100 : 0;
+                    return parsePercent(row.delinquency_rent_percentunits);
                 }
                 case 'insurance': {
-                    const payOther  = parseCurrency(row.paymentother_daily);
-                    const unitsOcc  = parseFloat(row.units_occupied) || 1;
-                    return (payOther / 12) / unitsOcc * 100;
+                    const payOther = parseCurrency(row.paymentother_mtd);
+                    const unitsOcc = parseFloat(row.units_occupied) || 1;
+                    const insurance = ((payOther / 10) / unitsOcc * 100);
+                    return insurance;
                 }
                 case 'autopay': {
-                    const ach   = parseCurrency(row.deposits_achdebit_mtd);
+                    const ach = parseCurrency(row.deposits_achdebit_mtd);
                     const total = parseCurrency(row.paymenttotals_mtd);
                     return total > 0 ? (ach / total) * 100 : 0;
                 }
                 case 'leads':
                     return (parseInt(row.leads_sparefoot_daily) || 0)
-                         + (parseInt(row.leads_phone_daily)     || 0)
-                         + (parseInt(row.leads_web_daily)       || 0)
-                         + (parseInt(row.leads_walkin_daily)    || 0);
+                        + (parseInt(row.leads_phone_daily) || 0)
+                        + (parseInt(row.leads_web_daily) || 0)
+                        + (parseInt(row.leads_walkin_daily) || 0);
                 case 'forecast': {
-                    const mtd      = parseCurrency(row.paymenttotals_mtd);
-                    const day      = row.dateObj.getDate();
-                    const total    = new Date(row.dateObj.getFullYear(), row.dateObj.getMonth() + 1, 0).getDate();
+                    const mtd = parseCurrency(row.paymenttotals_mtd);
+                    const day = row.dateObj.getDate();
+                    const total = new Date(row.dateObj.getFullYear(), row.dateObj.getMonth() + 1, 0).getDate();
                     return day > 0 ? (mtd / day) * total : 0;
                 }
                 default: return 0;
@@ -189,27 +193,32 @@ export async function fetchReportingData(location: string, view: string, metric:
                 case 'revenue':
                     return parseCurrency(row.total_revenue_receipts_mtd);
                 case 'move_in_out':
-                    return (parseInt(row.rental_activity_move_ins_mtd)  || 0)
-                         - (parseInt(row.rental_activity_move_outs_mtd) || 0);
+                    return (parseInt(row.rental_activity_move_ins_mtd) || 0)
+                        - (parseInt(row.rental_activity_move_outs_mtd) || 0);
                 case 'occupancy':
                     return parsePercent(row.occupancy_statistics_occupied_unit_pct);
                 case 'arrears': {
-                    const due   = parseCurrency(row.amount_due_totals_total);
+                    const due = parseCurrency(row.amount_due_totals_total);
                     const total = parseCurrency(row.total_revenue_receipts_mtd);
                     return total > 0 ? (due / total) * 100 : 0;
                 }
-                case 'insurance':
-                    return parsePercent(row.insurance_protection_pct_insured);
+                case 'insurance': {
+                    const amt= "amount_due_totals_units";
+                    const payOther = parseCurrency(row[amt]);
+                    const unitsOcc = parseFloat(row.occupancy_statistics_occupied_units) || 1;
+                    const insurance = (payOther / unitsOcc ) * 100;
+                    return insurance;
+                }
                 case 'autopay': {
-                    const ach   = parseCurrency(row.receipts_breakdown_ach_mtd);
+                    const ach = parseCurrency(row.receipts_breakdown_ach_mtd);
                     const total = parseCurrency(row.total_revenue_receipts_mtd);
                     return total > 0 ? (ach / total) * 100 : 0;
                 }
                 case 'leads':
                     return parseInt(row.leads_summary_total_leads_mtd) || 0;
                 case 'forecast': {
-                    const mtd   = parseCurrency(row.total_revenue_receipts_mtd);
-                    const day   = row.dateObj.getDate();
+                    const mtd = parseCurrency(row.total_revenue_receipts_mtd);
+                    const day = row.dateObj.getDate();
                     const total = new Date(row.dateObj.getFullYear(), row.dateObj.getMonth() + 1, 0).getDate();
                     return day > 0 ? (mtd / day) * total : 0;
                 }
@@ -226,7 +235,7 @@ export async function fetchReportingData(location: string, view: string, metric:
             monthsMap[key].push(row);
         });
 
-        const labels   = Array.from({ length: 31 }, (_, i) => `${i + 1}`);
+        const labels = Array.from({ length: 31 }, (_, i) => `${i + 1}`);
         const datasets = Object.keys(monthsMap).map(monthYear => {
             const monthData = new Array(31).fill(null);
             monthsMap[monthYear].forEach(row => {
@@ -238,7 +247,7 @@ export async function fetchReportingData(location: string, view: string, metric:
         return { labels, datasets };
 
     } else if (view === 'weekly') {
-        const labels   = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5'];
+        const labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5'];
         const datasets = [{ label: 'Current', data: [0, 0, 0, 0, 0] }];
         metricFilteredData.forEach(row => {
             const idx = Math.floor((row.dateObj.getDate() - 1) / 7);
@@ -247,7 +256,7 @@ export async function fetchReportingData(location: string, view: string, metric:
         return { labels, datasets };
 
     } else {
-        const labels   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         const yearData = new Array(12).fill(0);
         metricFilteredData.forEach(row => {
             yearData[row.dateObj.getMonth()] += Number(getMetricValue(row, metric) || 0);
@@ -274,7 +283,7 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
         .map(row => ({
             ...row,
             _rawDate: row[dateField] as string,
-            dateObj:  parseReportDate(row[dateField]),
+            dateObj: parseReportDate(row[dateField]),
         }))
         .sort((a, b) => b.dateObj.getTime() - a.dateObj.getTime());
 
@@ -283,10 +292,10 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
 
     // Build date-selector options
     const availableDates = meaningfulRows.map(r => ({
-        raw:   r._rawDate,
-        day:   r.dateObj.getDate().toString(),
+        raw: r._rawDate,
+        day: r.dateObj.getDate().toString(),
         month: r.dateObj.toLocaleString('en-US', { month: 'long' }),
-        year:  r.dateObj.getFullYear().toString(),
+        year: r.dateObj.getFullYear().toString(),
     }));
 
     // Pick requested date or fall back to latest
@@ -294,48 +303,48 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
         ? (meaningfulRows.find(r => r._rawDate === selectedDate) ?? meaningfulRows[0])
         : meaningfulRows[0];
 
-    const dateObj          = row.dateObj;
+    const dateObj = row.dateObj;
     const totalDaysInMonth = new Date(dateObj.getFullYear(), dateObj.getMonth() + 1, 0).getDate();
-    const currentDay       = dateObj.getDate();
+    const currentDay = dateObj.getDate();
 
     let metrics: Record<string, any>;
 
     if (location === 'charlotte') {
         const revenueMTD = parseCurrency(row.paymenttotals_mtd);
-        const achMTD     = parseCurrency(row.deposits_achdebit_mtd);
-        const insMTD     = parseCurrency(row.paymentinsurance_mtd);
-        const moveIns    = parseInt(row.activity_moveins_mtd)  || 0;
-        const moveOuts   = parseInt(row.activity_moveouts_mtd) || 0;
-        const leadsTotal =
-            (parseInt(row.leads_sparefoot_daily) || 0) +
-            (parseInt(row.leads_phone_daily)     || 0) +
-            (parseInt(row.leads_web_daily)       || 0) +
-            (parseInt(row.leads_walkin_daily)    || 0);
+        const achMTD = parseCurrency(row.deposits_achdebit_mtd);
+        const insMTD = parseCurrency(row.paymentinsurance_mtd);
+        const moveIns = parseInt(row.activity_moveins_mtd) || 0;
+        const moveOuts = parseInt(row.activity_moveouts_mtd) || 0;
+        const leadsTotal = (parseInt(row.leads_totals_mtd) || 0)
+        // (parseInt(row.leads_phone_daily)     || 0) +
+        // (parseInt(row.leads_web_daily)       || 0) +
+        // (parseInt(row.leads_walkin_daily)    || 0);
 
         // last_revenue: derive from previous month entry if available
         const previousMonthRow = meaningfulRows.find(r => {
             const d = r.dateObj;
             const targetMonth = dateObj.getMonth() === 0 ? 11 : dateObj.getMonth() - 1;
-            const targetYear  = dateObj.getMonth() === 0 ? dateObj.getFullYear() - 1 : dateObj.getFullYear();
+            const targetYear = dateObj.getMonth() === 0 ? dateObj.getFullYear() - 1 : dateObj.getFullYear();
             return d.getMonth() === targetMonth && d.getFullYear() === targetYear;
         });
         const lastRevenue = previousMonthRow ? parseCurrency(previousMonthRow.paymenttotals_mtd) : null;
 
         metrics = {
-            revenue:     revenueMTD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            revenue: revenueMTD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             last_revenue: lastRevenue,
             move_in_out: `${moveIns} / ${moveOuts}`,
-            occupancy:   parsePercent(row.units_occupancyrate).toFixed(1),
-            arrears:     revenueMTD > 0 ? ((insMTD / revenueMTD) * 100).toFixed(1) : '0.0',
+            occupancy: parsePercent(row.units_occupancyrate).toFixed(1),
+            // arrears:     revenueMTD > 0 ? ((insMTD / revenueMTD) * 100).toFixed(1) : '0.0',
+            arrears: parsePercent(row.delinquency_rent_percentunits).toFixed(1),
             insurance: (() => {
-                const payOther = parseCurrency(row.paymentother_daily);
+                const payOther = parseCurrency(row.paymentother_mtd);
                 const unitsOcc = parseFloat(row.units_occupied) || 1;
-                return ((payOther / 12) / unitsOcc * 100).toFixed(2);
+                return ((payOther / 10) / unitsOcc * 100).toFixed(2);
             })(),
-            autopay:  revenueMTD > 0 ? ((achMTD / revenueMTD) * 100).toFixed(1) : '0.0',
-            cac:      '145.20',
-            ltv:      '2450.00',
-            leads:    leadsTotal,
+            autopay: revenueMTD > 0 ? ((achMTD / revenueMTD) * 100).toFixed(1) : '0.0',
+            cac: '145.20',
+            ltv: '2450.00',
+            leads: leadsTotal,
             forecast: currentDay > 0
                 ? ((revenueMTD / currentDay) * totalDaysInMonth).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                 : '0.00',
@@ -343,25 +352,32 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
 
     } else {
         // Houston — daily_reporting_storagefms
-        const revenueMTD      = parseCurrency(row.total_revenue_receipts_mtd);
-        const lastRevenueRaw  = readField(row, ['total_revenue_receipts_last_month']);
-        const achMTD          = parseCurrency(row.receipts_breakdown_ach_mtd);
-        const moveIns         = parseInt(row.rental_activity_move_ins_mtd)  || 0;
-        const moveOuts        = parseInt(row.rental_activity_move_outs_mtd) || 0;
-        const dueAmount       = parseCurrency(row.amount_due_totals_total);
-        const arrearsPercent  = revenueMTD > 0 ? (dueAmount / revenueMTD) * 100 : 0;
+        const revenueMTD = parseCurrency(row.total_revenue_receipts_mtd);
+        const lastRevenueRaw = readField(row, ['total_revenue_receipts_last_month']);
+        const achMTD = parseCurrency(row.receipts_breakdown_ach_mtd);
+        const moveIns = parseInt(row.rental_activity_move_ins_mtd) || 0;
+        const moveOuts = parseInt(row.rental_activity_move_outs_mtd) || 0;
+        const dueAmount = parseCurrency(row.amount_due_totals_total);
+        // const arrearsPercent  = revenueMTD > 0 ? (dueAmount / revenueMTD) * 100 : 0;
+        const arrearsPercent = parsePercent(row.delinquency_rent_percentunits);
 
         metrics = {
-            revenue:      revenueMTD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+            revenue: revenueMTD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             last_revenue: lastRevenueRaw == null ? null : parseCurrency(lastRevenueRaw),
-            move_in_out:  `${moveIns} / ${moveOuts}`,
-            occupancy:    parsePercent(row.occupancy_statistics_occupied_unit_pct).toFixed(1),
-            arrears:      arrearsPercent.toFixed(1),
-            insurance:    parsePercent(row.insurance_protection_pct_insured).toFixed(2),
-            autopay:      revenueMTD > 0 ? ((achMTD / revenueMTD) * 100).toFixed(1) : '0.0',
-            cac:          '145.20',
-            ltv:          '2450.00',
-            leads:        parseInt(row.leads_summary_total_leads_mtd) || 0,
+            move_in_out: `${moveIns} / ${moveOuts}`,
+            occupancy: parsePercent(row.occupancy_statistics_occupied_unit_pct).toFixed(1),
+            arrears: arrearsPercent.toFixed(1),
+            insurance: (() => {
+                const payOther = parseCurrency(row["amount_due_totals_units"]);
+                const unitsOcc = parseFloat(row["occupancy_statistics_occupied_units"]) || 1;
+                console.log(unitsOcc);
+                
+                return ((payOther / unitsOcc )* 100).toFixed(2);
+            })(),
+            autopay: revenueMTD > 0 ? ((achMTD / revenueMTD) * 100).toFixed(1) : '0.0',
+            cac: '145.20',
+            ltv: '2450.00',
+            leads: parseInt(row.leads_summary_total_leads_mtd) || 0,
             forecast: currentDay > 0
                 ? ((revenueMTD / currentDay) * totalDaysInMonth).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                 : '0.00',
@@ -436,9 +452,9 @@ export async function fetchForecasts(targetYear?: number, targetMonth?: number) 
     if (!row) row = data[0];
 
     return {
-        houston:   parseCurrency(row.houston),
+        houston: parseCurrency(row.houston),
         charlotte: parseCurrency(row.charlotte),
-        catawba:   parseCurrency(row.catawba),
+        catawba: parseCurrency(row.catawba),
         rock_hill: parseCurrency(row.rock_hill),
     };
 }
