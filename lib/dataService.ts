@@ -161,7 +161,7 @@ export async function fetchReportingData(location: string, view: string, metric:
                 //     return total > 0 ? (ins / total) * 100 : 0;
                 // }
                 case 'arrears': {
-                    return parsePercent(row.delinquency_rent_percentunits);
+                    return parsePercent(row.unpaidcharges_total_percentunits);
                 }
                 case 'insurance': {
                     const payOther = parseCurrency(row.paymentother_mtd);
@@ -198,16 +198,16 @@ export async function fetchReportingData(location: string, view: string, metric:
                 case 'occupancy':
                     return parsePercent(row.occupancy_statistics_occupied_unit_pct);
                 case 'arrears': {
-                    const due = parseCurrency(row.amount_due_totals_total);
-                    const total = parseCurrency(row.total_revenue_receipts_mtd);
+                    const due = parseCurrency(row.amount_due_totals_units);
+                    const total = parseCurrency(row.occupancy_statistics_occupied_units);
                     return total > 0 ? (due / total) * 100 : 0;
                 }
                 case 'insurance': {
-                    const amt= "amount_due_totals_units";
-                    const payOther = parseCurrency(row[amt]);
-                    const unitsOcc = parseFloat(row.occupancy_statistics_occupied_units) || 1;
-                    const insurance = (payOther / unitsOcc ) * 100;
-                    return insurance;
+                    // const amt= "amount_due_totals_units";
+                    // const payOther = parseCurrency(row[amt]);
+                    // const unitsOcc = parseFloat(row.occupancy_statistics_occupied_units) || 1;
+                    // const insurance = (payOther / unitsOcc ) * 100;
+                    return parseCurrency(row.insurance_protection_pct_insured);
                 }
                 case 'autopay': {
                     const ach = parseCurrency(row.receipts_breakdown_ach_mtd);
@@ -335,7 +335,7 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
             move_in_out: `${moveIns} / ${moveOuts}`,
             occupancy: parsePercent(row.units_occupancyrate).toFixed(1),
             // arrears:     revenueMTD > 0 ? ((insMTD / revenueMTD) * 100).toFixed(1) : '0.0',
-            arrears: parsePercent(row.delinquency_rent_percentunits).toFixed(1),
+            arrears: parsePercent(row.unpaidcharges_total_percentunits).toFixed(1),
             insurance: (() => {
                 const payOther = parseCurrency(row.paymentother_mtd);
                 const unitsOcc = parseFloat(row.units_occupied) || 1;
@@ -357,9 +357,9 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
         const achMTD = parseCurrency(row.receipts_breakdown_ach_mtd);
         const moveIns = parseInt(row.rental_activity_move_ins_mtd) || 0;
         const moveOuts = parseInt(row.rental_activity_move_outs_mtd) || 0;
-        const dueAmount = parseCurrency(row.amount_due_totals_total);
-        // const arrearsPercent  = revenueMTD > 0 ? (dueAmount / revenueMTD) * 100 : 0;
-        const arrearsPercent = parsePercent(row.delinquency_rent_percentunits);
+        const due = parseCurrency(row.amount_due_totals_units);
+        const total = parseCurrency(row.occupancy_statistics_occupied_units);
+        const arrearsPercent = total > 0 ? (due / total) * 100 : 0;
 
         metrics = {
             revenue: revenueMTD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
@@ -367,13 +367,7 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
             move_in_out: `${moveIns} / ${moveOuts}`,
             occupancy: parsePercent(row.occupancy_statistics_occupied_unit_pct).toFixed(1),
             arrears: arrearsPercent.toFixed(1),
-            insurance: (() => {
-                const payOther = parseCurrency(row["amount_due_totals_units"]);
-                const unitsOcc = parseFloat(row["occupancy_statistics_occupied_units"]) || 1;
-                console.log(unitsOcc);
-                
-                return ((payOther / unitsOcc )* 100).toFixed(2);
-            })(),
+            insurance: parseCurrency(row.insurance_protection_pct_insured).toFixed(1),
             autopay: revenueMTD > 0 ? ((achMTD / revenueMTD) * 100).toFixed(1) : '0.0',
             cac: '145.20',
             ltv: '2450.00',
