@@ -1,3 +1,5 @@
+"use client";
+
 import { MONTH_NAMES } from "@/lib/constants";
 
 interface DashboardHeaderProps {
@@ -21,24 +23,13 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
   return (
     <header className="mb-3 flex flex-col gap-2 rounded-[12px] border border-slate-200 bg-[#f8f9fb] px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
-      <h1 className="text-[12px] font-semibold text-slate-700">
-        Daily Sales Reporting
-      </h1>
+      <h1 className="text-[12px] font-semibold text-slate-700">Daily Sales Reporting</h1>
       <div className="flex flex-wrap items-center gap-2">
-        {loading && (
-          <div className="flex items-center gap-1.5 px-2">
-            <div className="h-2 w-2 animate-spin rounded-full border border-slate-300 border-t-slate-600" />
-            <span className="text-[10px] font-medium text-slate-500">
-              Syncing…
-            </span>
-          </div>
-        )}
-
-        {/* Year selector */}
+        {loading && <span className="hidden text-[10px] text-slate-400 sm:inline">Syncing...</span>}
         <select
           className="h-8 rounded-full border border-slate-300 bg-white px-3 text-[11px] font-medium text-slate-600 outline-none"
           value={selectedYear}
-          onChange={(e) => onYearChange(Number.parseInt(e.target.value, 10))}
+          onChange={(event) => onYearChange(Number.parseInt(event.target.value, 10))}
         >
           {years.map((year) => (
             <option key={year} value={year}>
@@ -47,11 +38,10 @@ export function DashboardHeader({
           ))}
         </select>
 
-        {/* Month selector */}
         <select
           className="h-8 rounded-full border border-slate-300 bg-white px-3 text-[11px] font-medium text-slate-600 outline-none"
           value={selectedMonth}
-          onChange={(e) => onMonthChange(Number.parseInt(e.target.value, 10))}
+          onChange={(event) => onMonthChange(Number.parseInt(event.target.value, 10))}
         >
           {monthsForYear.map((month) => (
             <option key={`${selectedYear}-${month}`} value={month}>
@@ -63,3 +53,4 @@ export function DashboardHeader({
     </header>
   );
 }
+

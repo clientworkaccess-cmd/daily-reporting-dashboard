@@ -84,7 +84,7 @@ const hasMetricRowData = (row: any, location: string, metricId: string): boolean
             case 'occupancy': return hasValue(row.units_occupancyrate);
             case 'arrears': return hasAnyFieldValue(row, ['paymentinsurance_mtd', 'paymenttotals_mtd']);
             case 'insurance': return hasAnyFieldValue(row, ['paymentother_daily', 'units_occupied']);
-            case 'autopay': return hasAnyFieldValue(row, ['deposits_achdebit_mtd', 'paymenttotals_mtd']);
+            case 'autopay': return hasAnyFieldValue(row, ['units_occupied', 'units_autobilled']);
             case 'leads': return hasAnyFieldValue(row, ['leads_sparefoot_daily', 'leads_phone_daily', 'leads_web_daily', 'leads_walkin_daily']);
             case 'forecast': return hasValue(row.paymenttotals_mtd);
             default: return hasKpiRowData(row, location);
@@ -170,8 +170,8 @@ export async function fetchReportingData(location: string, view: string, metric:
                     return insurance;
                 }
                 case 'autopay': {
-                    const ach = parseCurrency(row.deposits_achdebit_mtd);
-                    const total = parseCurrency(row.paymenttotals_mtd);
+                    const ach = parseCurrency(row.units_autobilled);
+                    const total = parseCurrency(row.units_occupied);
                     return total > 0 ? (ach / total) * 100 : 0;
                 }
                 case 'leads':
@@ -311,8 +311,8 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
 
     if (location === 'charlotte') {
         const revenueMTD = parseCurrency(row.paymenttotals_mtd);
-        const achMTD = parseCurrency(row.deposits_achdebit_mtd);
-        const insMTD = parseCurrency(row.paymentinsurance_mtd);
+        const achMTD = parseCurrency(row.units_autobilled);
+        const insMTD = parseCurrency(row.units_occupied);
         const moveIns = parseInt(row.activity_moveins_mtd) || 0;
         const moveOuts = parseInt(row.activity_moveouts_mtd) || 0;
         const leadsTotal = (parseInt(row.leads_totals_mtd) || 0)
@@ -341,7 +341,7 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
                 const unitsOcc = parseFloat(row.units_occupied) || 1;
                 return ((payOther / 10) / unitsOcc * 100).toFixed(2);
             })(),
-            autopay: revenueMTD > 0 ? ((achMTD / revenueMTD) * 100).toFixed(1) : '0.0',
+            autopay: revenueMTD > 0 ? ((achMTD / insMTD) * 100).toFixed(1) : '0.0',
             cac: '145.20',
             ltv: '2450.00',
             leads: leadsTotal,

@@ -1,3 +1,5 @@
+"use client";
+
 import type { LocationCardData } from "@/types/dashboard";
 import { LOCATION_META } from "@/lib/constants";
 import { formatPercent } from "@/lib/utils";

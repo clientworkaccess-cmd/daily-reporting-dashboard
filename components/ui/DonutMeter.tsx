@@ -1,3 +1,5 @@
+"use client";
+
 interface DonutMeterProps {
   value: number;
   color: string;

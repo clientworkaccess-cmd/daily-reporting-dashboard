@@ -13,43 +13,40 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Tooltip,
-  Legend
-);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend);
 
 interface MiniTrendChartProps {
   lines: TrendSeries[];
+  dayCount?: number;
 }
 
-export function MiniTrendChart({ lines }: MiniTrendChartProps) {
-  const normalizedLines = cleanLines(lines);
+function fitPoints(points: Array<number | null>, targetLength: number) {
+  if (points.length === targetLength) {
+    return points;
+  }
+  if (points.length > targetLength) {
+    return points.slice(0, targetLength);
+  }
+  return [...points, ...Array.from({ length: targetLength - points.length }, () => null)];
+}
 
+export function MiniTrendChart({ lines, dayCount }: MiniTrendChartProps) {
+  const normalizedLines = cleanLines(lines);
   if (normalizedLines.length === 0) {
-    return (
-      <div className="flex h-[140px] w-full items-center justify-center text-[10px] text-slate-400">
-        No data
-      </div>
-    );
+    return <div className="flex h-[112px] w-full items-center justify-center text-[10px] text-slate-400">No data</div>;
   }
 
-  const pointCount = Math.max(2, ...normalizedLines.map((l) => l.points.length));
-  const labels = Array.from({ length: pointCount }, (_, i) => `${i + 1}`);
-
-  const COLORS = ["#89c2ff", "#b495d6", "#6fa9c2", "#66cde0"] as const;
+  const pointCount = Math.max(2, dayCount ?? 0, ...normalizedLines.map((line) => line.points.length));
+  const labels = Array.from({ length: pointCount }, (_, index) => `${index + 1}`);
 
   const chartData = {
     labels,
-    datasets: normalizedLines.map((series, idx) => ({
+    datasets: normalizedLines.map((series, index) => ({
       label: series.label,
-      data: series.points,
-      borderColor: COLORS[idx % COLORS.length],
+      data: fitPoints(series.points, pointCount),
+      borderColor: ["#89c2ff", "#b495d6", "#6fa9c2", "#66cde0"][index % 4],
       backgroundColor: "transparent",
-      borderWidth: idx === normalizedLines.length - 1 ? 2.4 : 1.8,
+      borderWidth: index === normalizedLines.length - 1 ? 2.4 : 1.8,
       pointRadius: 0,
       pointHoverRadius: 3,
       pointHitRadius: 10,
@@ -61,17 +58,12 @@ export function MiniTrendChart({ lines }: MiniTrendChartProps) {
   const options = {
     responsive: true,
     maintainAspectRatio: false,
-    interaction: { mode: "index" as const, intersect: false },
+    interaction: {
+      mode: "index" as const,
+      intersect: false,
+    },
     plugins: {
-      legend: {
-        display: true,
-        position: "bottom" as const,
-        labels: {
-          font: { size: 8 },
-          boxWidth: 6,
-          boxHeight: 6,
-        },
-      },
+      legend: { display: false },
       tooltip: {
         enabled: true,
         backgroundColor: "rgba(15, 23, 42, 0.92)",
@@ -80,16 +72,11 @@ export function MiniTrendChart({ lines }: MiniTrendChartProps) {
         displayColors: false,
         callbacks: {
           title: (items: any[]) => `Day ${items[0]?.label ?? ""}`,
-          label: (ctx: any) => {
-            const month = ctx.dataset.label;
-            const value = Number(ctx.raw).toLocaleString("en-US");
-
-            return `${month}: ${value}`;
-          },
+          label: (ctx: any) =>
+            `${ctx.dataset?.label ?? ""}: ${Number(ctx.raw).toFixed(1)}`,
         },
       },
     },
-
     scales: {
       x: {
         grid: { display: false },
@@ -98,11 +85,9 @@ export function MiniTrendChart({ lines }: MiniTrendChartProps) {
           font: { size: 8 },
           maxRotation: 0,
           autoSkip: false,
-          callback: (_: unknown, idx: number) => {
-            const d = idx + 1;
-            return [1, 7, 14, 21, 28, pointCount].includes(d)
-              ? `${d}`
-              : "";
+          callback: (_: unknown, index: number) => {
+            const day = index + 1;
+            return [1, 7, 14, 21, 28, pointCount].includes(day) ? `${day}` : "";
           },
         },
       },
@@ -111,11 +96,15 @@ export function MiniTrendChart({ lines }: MiniTrendChartProps) {
         ticks: {
           color: "#9aa4b2",
           font: { size: 8 },
-          callback: (v: string | number) => {
-            const n = Number(v);
-            if (Math.abs(n) >= 1000) return `${Math.round(n / 1000)}k`;
-            if (Math.abs(n) >= 100) return `${Math.round(n)}`;
-            return `${Math.round(n * 10) / 10}`;
+          callback: (value: string | number) => {
+            const num = Number(value);
+            if (Math.abs(num) >= 1000) {
+              return `${Math.round(num / 1000)}k`;
+            }
+            if (Math.abs(num) >= 100) {
+              return `${Math.round(num)}`;
+            }
+            return `${Math.round(num )}`;
           },
         },
       },
@@ -123,7 +112,7 @@ export function MiniTrendChart({ lines }: MiniTrendChartProps) {
   };
 
   return (
-    <div className="h-[180px] w-full"> {/* 👈 height fix */}
+    <div className="h-[120px] w-full">
       <Line data={chartData} options={options} />
     </div>
   );

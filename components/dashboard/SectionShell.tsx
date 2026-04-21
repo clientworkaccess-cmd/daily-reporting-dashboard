@@ -1,6 +1,10 @@
+"use client";
+
+import type { ReactNode } from "react";
+
 interface SectionShellProps {
   title: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function SectionShell({ title, children }: SectionShellProps) {
@@ -11,3 +15,4 @@ export function SectionShell({ title, children }: SectionShellProps) {
     </section>
   );
 }
+

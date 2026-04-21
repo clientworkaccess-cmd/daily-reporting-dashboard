@@ -1,3 +1,5 @@
+"use client";
+
 import { UserRound } from "lucide-react";
 import type { LocationCardData } from "@/types/dashboard";
 import { LOCATION_META } from "@/lib/constants";

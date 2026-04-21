@@ -1,5 +1,7 @@
+"use client";
+
 import type { LocationCardData } from "@/types/dashboard";
-import { formatCurrencyMaybe, isFiniteNumber, lastDefinedValue, formatCurrency } from "@/lib/utils";
+import { formatCurrencyMaybe, isFiniteNumber, lastDefinedValue } from "@/lib/utils";
 import { SectionShell } from "@/components/dashboard/SectionShell";
 
 interface RevenueComparisonSectionProps {
