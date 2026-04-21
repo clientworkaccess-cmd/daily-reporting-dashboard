@@ -63,7 +63,20 @@ export function MiniTrendChart({ lines, dayCount }: MiniTrendChartProps) {
       intersect: false,
     },
     plugins: {
-      legend: { display: false },
+      legend: {
+        display: true,
+        position: "bottom" as const,
+        labels: {
+          color: "#9aa4b2",
+          font: {
+            size: 10,
+            weight: 500,
+            family: "'Inter', sans-serif",
+          },
+          boxWidth: 10,
+          boxHeight: 10,
+        },
+      },
       tooltip: {
         enabled: true,
         backgroundColor: "rgba(15, 23, 42, 0.92)",
@@ -104,7 +117,7 @@ export function MiniTrendChart({ lines, dayCount }: MiniTrendChartProps) {
             if (Math.abs(num) >= 100) {
               return `${Math.round(num)}`;
             }
-            return `${Math.round(num )}`;
+            return `${Math.round(num)}`;
           },
         },
       },
@@ -112,7 +125,7 @@ export function MiniTrendChart({ lines, dayCount }: MiniTrendChartProps) {
   };
 
   return (
-    <div className="h-[120px] w-full">
+    <div className="h-40 w-full">
       <Line data={chartData} options={options} />
     </div>
   );
