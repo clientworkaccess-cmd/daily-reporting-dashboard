@@ -154,7 +154,7 @@ export async function fetchReportingData(location: string, view: string, metric:
                     return (parseInt(row.activity_moveins_mtd) || 0)
                         - (parseInt(row.activity_moveouts_mtd) || 0);
                 case 'occupancy':
-                    return parsePercent(row.units_occupancyrate);
+                    return row.units_occupancyrate.includes("0.") ? row.units_occupancyrate * 100 : parsePercent(row.units_occupancyrate);
                 // case 'arrears': {
                 //     const ins = parseCurrency(row.paymentinsurance_mtd);
                 //     const total = parseCurrency(row.paymenttotals_mtd);
@@ -333,7 +333,7 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
             revenue: revenueMTD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             last_revenue: lastRevenue,
             move_in_out: `${moveIns} / ${moveOuts}`,
-            occupancy: parsePercent(row.units_occupancyrate).toFixed(1),
+            occupancy: `${row.units_occupancyrate.includes("0.") ? row.units_occupancyrate * 100 : parsePercent(row.units_occupancyrate).toFixed(1)}`,
             // arrears:     revenueMTD > 0 ? ((insMTD / revenueMTD) * 100).toFixed(1) : '0.0',
             arrears: parsePercent(row.unpaidcharges_total_percentunits).toFixed(1),
             insurance: (() => {
@@ -365,7 +365,7 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
             revenue: revenueMTD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             last_revenue: lastRevenueRaw == null ? null : parseCurrency(lastRevenueRaw),
             move_in_out: `${moveIns} / ${moveOuts}`,
-            occupancy: parsePercent(row.occupancy_statistics_occupied_unit_pct).toFixed(1),
+            occupancy:parsePercent(row.occupancy_statistics_occupied_unit_pct).toFixed(1),
             arrears: arrearsPercent.toFixed(1),
             insurance: parseCurrency(row.insurance_protection_pct_insured).toFixed(1),
             autopay: revenueMTD > 0 ? ((achMTD / revenueMTD) * 100).toFixed(1) : '0.0',
