@@ -25,8 +25,8 @@ export default function DashboardPage() {
   const dayCount = new Date(selectedYear, selectedMonth, 0).getDate();
 
   return (
-    <main className="relative min-h-screen bg-[#f2f3f6] px-2 py-3 text-slate-700 sm:px-3">
-      <div className="w-full rounded-[16px] border border-[#d8dde5] bg-white p-3 shadow-[0_1px_3px_rgba(15,23,42,0.08)]">
+    <main className="relative min-h-screen bg-bg-base px-2 py-3 text-text-main sm:px-3">
+      <div className="w-full rounded-[16px] border border-border-card bg-white p-3 shadow-[0_1px_3px_rgba(15,23,42,0.08)]">
         <DashboardHeader
           years={dashboard.years}
           monthsForYear={monthsForYear}

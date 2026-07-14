@@ -31,22 +31,22 @@ export function RevenueComparisonSection({
 
           return (
             <div key={`${title}-${loc.id}`} className="text-center">
-              <p className="text-[9px] font-medium text-slate-500">{loc.label}</p>
-              <p className="mt-1 text-[10px] text-slate-500">
+              <p className="text-[9px] font-medium text-text-muted">{loc.label}</p>
+              <p className="mt-1 text-[10px] text-text-muted">
                 Current:{" "}
-                <span className="font-semibold text-slate-700">
+                <span className="font-semibold text-text-main">
                   {formatCurrencyMaybe(current)}
                 </span>
               </p>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-[10px] text-text-light">
                 Last:{" "}
-                <span className="font-semibold text-slate-600">
+                <span className="font-semibold text-text-semibold">
                   {formatCurrencyMaybe(previous)}
                 </span>
               </p>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-[10px] text-text-light">
                 2nd Last:{" "}
-                <span className="font-semibold text-slate-600">
+                <span className="font-semibold text-text-semibold">
                   {formatCurrencyMaybe(secondPrevious)}
                 </span>
               </p>

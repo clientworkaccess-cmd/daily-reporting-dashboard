@@ -13,7 +13,7 @@ export function MoveInOutSection({ locations }: MoveInOutSectionProps) {
         {locations.map((loc) => (
           <div
             key={`move-in-out-${loc.id}`}
-            className={`rounded-full px-2 py-1.5 text-center text-[11px] font-semibold text-white ${LOCATION_META[loc.id].pillClass}`}
+            className={`rounded-full px-2 py-1.5 text-center text-[11px] font-semibold text-text-hover-dark ${LOCATION_META[loc.id].pillClass}`}
           >
             {loc.moveIns} / {loc.moveOuts}
           </div>

@@ -38,8 +38,8 @@ export function TabsTrigger({ value, children, className }: any) {
             className={cn(
                 "inline-flex items-center justify-center whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
                 isActive
-                    ? "bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-sm"
-                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                    ? "bg-white dark:bg-bg-active-dark text-accent-blue-light dark:text-accent-blue-dark shadow-sm"
+                    : "text-text-semibold dark:text-text-light hover:text-text-hover-light dark:hover:text-text-hover-dark"
                 , className)}
         >
             {children}

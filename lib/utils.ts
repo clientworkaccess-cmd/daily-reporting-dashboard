@@ -145,7 +145,7 @@ export function normalizeSeries(
 export function buildStaticLines(target: number): ChartPoint[][] {
   const safeTarget = Math.max(target, 1);
   const days = 31;
-  return [0.6, 0.73, 0.86, 1].map((scale, lineIndex) =>
+  return [0.4, 0.52, 0.64, 0.76, 0.88, 1.0].map((scale, lineIndex) =>
     Array.from({ length: days }, (_, dayIndex) => {
       const progress = dayIndex / (days - 1);
       const start = safeTarget * (0.18 + lineIndex * 0.07);
@@ -195,7 +195,7 @@ export function extractTrendLines(
   if (endIndex < 0) return [];
 
   const scoped = parsed
-    .slice(Math.max(0, endIndex - 3), endIndex + 1)
+    .slice(Math.max(0, endIndex - 5), endIndex + 1)
     .map((e) => ({
       label: e.date
         ? e.date.toLocaleString("default", { month: "short" })
@@ -293,4 +293,9 @@ export function emptyCharts(): Record<ChartMetric, TrendSeries[]> {
     (acc, metric) => { acc[metric] = []; return acc; },
     {} as Record<ChartMetric, TrendSeries[]>
   );
+}
+
+export function getCssVar(name: string, fallback: string): string {
+  if (typeof window === "undefined") return fallback;
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 }

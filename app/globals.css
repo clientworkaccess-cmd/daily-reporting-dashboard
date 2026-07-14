@@ -2,16 +2,73 @@
 
 @theme {
   --font-sans: var(--font-inter), "Inter", "system-ui", sans-serif;
+
+  /* App main design system colors */
+  --color-border-main: #e2e8f0;
+  --color-bg-base: #f2f3f6;
+  --color-text-main: #334155;
+
+  /* Semantic UI Colors */
+  --color-text-muted: #64748b;          /* slate-500 */
+  --color-text-semibold: #475569;       /* slate-600 */
+  --color-text-light: #94a3b8;          /* slate-400 */
+  --color-text-inactive: #e2e8f0;       /* slate-200 */
+  --color-text-hover-light: #0f172a;    /* slate-900 */
+  --color-text-hover-dark: #ffffff;     /* white */
+  
+  --color-border-muted: #e2e8f0;        /* slate-200 */
+  --color-border-dark: #cbd5e1;         /* slate-300 */
+  
+  --color-accent-blue: #3b82f6;         /* blue-500 */
+  --color-accent-blue-light: #2563eb;   /* blue-600 */
+  --color-accent-blue-dark: #60a5fa;    /* blue-400 */
+  --color-bg-active-dark: #334155;      /* slate-700 */
+
+  /* Card and layout borders/backgrounds */
+  --color-bg-header: #f8f9fb;
+  --color-border-card: #d8dde5;
+  --color-donut-track: #ecf0f4;
+
+  /* Chart colors */
+  --color-chart-label: #9aa4b2;
+  --color-chart-grid-light: #eef2f7;
+  --color-chart-grid-dark: rgba(0, 0, 0, 0.05);
+  --color-chart-tooltip-bg-light: rgba(255, 255, 255, 0.95);
+  --color-chart-tooltip-bg-dark: rgba(15, 23, 42, 0.92);
+  --color-chart-tooltip-title-light: #1e293b;
+  --color-chart-tooltip-title-dark: #ffffff;
+  --color-chart-tooltip-body-light: #475569;
+  --color-chart-tooltip-body-dark: #e2e8f0;
+
+  /* Location specific branding colors */
+  --color-loc-charlotte: #2e88d1;
+  --color-loc-charlotte-border: #89c2ff;
+  --color-loc-houston: #9454c9;
+  --color-loc-houston-border: #b495d6;
+  --color-loc-catawba: #1d7d9c;
+  --color-loc-catawba-border: #6fa9c2;
+  --color-loc-rock-hill: #3ca7c7;
+  --color-loc-rock-hill-border: #66cde0;
+
+  /* Sky sequential theme palette for reporting charts */
+  --color-sky-seq-100: #e0f2fe;
+  --color-sky-seq-200: #bae6fd;
+  --color-sky-seq-300: #7dd3fc;
+  --color-sky-seq-400: #38bdf8;
+  --color-sky-seq-500: #0ea5e9;
+  --color-sky-seq-600: #0284c7;
+  --color-sky-seq-700: #0369a1;
+  --color-sky-seq-800: #075985;
 }
 
 @layer base {
   * {
-    border-color: #e2e8f0;
+    border-color: var(--color-border-main);
   }
 
   body {
-    background: #f2f3f6;
-    color: #334155;
+    background: var(--color-bg-base);
+    color: var(--color-text-main);
     @apply antialiased;
   }
 }

@@ -17,10 +17,10 @@ export function ChartSection({ title, metric, locations, dayCount }: ChartSectio
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {locations.map((loc) => (
           <div key={`${title}-${loc.id}`}>
-            <p className="mb-1 text-center text-[9px] font-medium text-slate-500">
+            <p className="mb-1 text-center text-[9px] font-medium text-text-muted">
               {loc.label}
             </p>
-            <MiniTrendChart lines={loc.charts[metric]} dayCount={dayCount} />
+            <MiniTrendChart lines={loc.charts[metric]} dayCount={dayCount} locationId={loc.id} />
           </div>
         ))}
       </div>

@@ -8,27 +8,27 @@ export const LOCATION_META: Record<
 > = {
   charlotte: {
     label:      "Charlotte",
-    pillClass:  "bg-[#2e88d1]",
-    iconClass:  "text-[#2e88d1]",
-    donutColor: "#2e88d1",
+    pillClass:  "bg-loc-charlotte",
+    iconClass:  "text-loc-charlotte",
+    donutColor: "var(--color-loc-charlotte)",
   },
   houston: {
     label:      "Houston",
-    pillClass:  "bg-[#9454c9]",
-    iconClass:  "text-[#9454c9]",
-    donutColor: "#9454c9",
+    pillClass:  "bg-loc-houston",
+    iconClass:  "text-loc-houston",
+    donutColor: "var(--color-loc-houston)",
   },
   catawba: {
     label:      "Catawba",
-    pillClass:  "bg-[#1d7d9c]",
-    iconClass:  "text-[#1d7d9c]",
-    donutColor: "#1d7d9c",
+    pillClass:  "bg-loc-catawba",
+    iconClass:  "text-loc-catawba",
+    donutColor: "var(--color-loc-catawba)",
   },
   rock_hill: {
     label:      "Rock Hill",
-    pillClass:  "bg-[#3ca7c7]",
-    iconClass:  "text-[#3ca7c7]",
-    donutColor: "#3ca7c7",
+    pillClass:  "bg-loc-rock-hill",
+    iconClass:  "text-loc-rock-hill",
+    donutColor: "var(--color-loc-rock-hill)",
   },
 };
 

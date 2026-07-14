@@ -20,7 +20,7 @@ export function DonutMeter({ value, color }: DonutMeterProps) {
         cy={size / 2}
         r={radius}
         fill="none"
-        stroke="#ecf0f4"
+        stroke="var(--color-donut-track)"
         strokeWidth="10"
       />
       {/* Filled arc */}

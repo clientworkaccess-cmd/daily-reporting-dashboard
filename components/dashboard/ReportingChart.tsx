@@ -14,6 +14,7 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import { fetchReportingData } from "@/lib/dataService";
+import { getCssVar } from "@/lib/utils";
 
 ChartJS.register(
     CategoryScale,
@@ -32,20 +33,27 @@ interface ReportingChartProps {
     metric: string;
 }
 
-const COLORS = [
-    "#0ea5e9", // sky-500
-    "#0284c7", // sky-600
-    "#0369a1", // sky-700
-    "#075985", // sky-800
-    "#38bdf8", // sky-400
-    "#7dd3fc", // sky-300
-    "#bae6fd", // sky-200
-    "#e0f2fe", // sky-100
-];
-
 export default function ReportingChart({ location, view, metric }: ReportingChartProps) {
     const [chartData, setChartData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+
+    const COLORS = [
+        getCssVar("--color-sky-seq-500", "#0ea5e9"),
+        getCssVar("--color-sky-seq-600", "#0284c7"),
+        getCssVar("--color-sky-seq-700", "#0369a1"),
+        getCssVar("--color-sky-seq-800", "#075985"),
+        getCssVar("--color-sky-seq-400", "#38bdf8"),
+        getCssVar("--color-sky-seq-300", "#7dd3fc"),
+        getCssVar("--color-sky-seq-200", "#bae6fd"),
+        getCssVar("--color-sky-seq-100", "#e0f2fe"),
+    ];
+
+    const currentMonthColor = getCssVar("--color-sky-seq-500", "#0ea5e9");
+    const tooltipBg = getCssVar("--color-chart-tooltip-bg-light", "rgba(255, 255, 255, 0.95)");
+    const tooltipTitle = getCssVar("--color-chart-tooltip-title-light", "#1e293b");
+    const tooltipBody = getCssVar("--color-chart-tooltip-body-light", "#475569");
+    const tooltipBorder = getCssVar("--color-border-main", "#e2e8f0");
+    const gridColor = getCssVar("--color-chart-grid-dark", "rgba(0, 0, 0, 0.05)");
 
     useEffect(() => {
         async function loadData() {
@@ -59,7 +67,7 @@ export default function ReportingChart({ location, view, metric }: ReportingChar
                         const total = data.datasets.length;
                         // Opacity: 1 for current month (last one), decreasing for past months
                         const opacity = total > 1 ? (0.2 + (idx / (total - 1)) * 0.8) : 1;
-                        const color = ds.label === "Current Month" ? "#0ea5e9" : COLORS[idx % COLORS.length];
+                        const color = ds.label === "Current Month" ? currentMonthColor : COLORS[idx % COLORS.length];
 
                         return {
                             ...ds,
@@ -81,7 +89,7 @@ export default function ReportingChart({ location, view, metric }: ReportingChar
         }
 
         loadData();
-    }, [location, view, metric]);
+    }, [location, view, metric, COLORS, currentMonthColor]);
 
     const options = {
         responsive: true,
@@ -98,10 +106,10 @@ export default function ReportingChart({ location, view, metric }: ReportingChar
                 },
             },
             tooltip: {
-                backgroundColor: "rgba(255, 255, 255, 0.95)",
-                titleColor: "#1e293b",
-                bodyColor: "#475569",
-                borderColor: "#e2e8f0",
+                backgroundColor: tooltipBg,
+                titleColor: tooltipTitle,
+                bodyColor: tooltipBody,
+                borderColor: tooltipBorder,
                 borderWidth: 1,
                 padding: 12,
                 displayColors: true,
@@ -119,7 +127,7 @@ export default function ReportingChart({ location, view, metric }: ReportingChar
                 ticks: { font: { size: 11 } }
             },
             y: {
-                grid: { color: "rgba(0, 0, 0, 0.05)" },
+                grid: { color: gridColor },
                 beginAtZero: true,
                 ticks: {
                     font: { size: 11 },

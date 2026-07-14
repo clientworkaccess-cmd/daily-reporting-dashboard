@@ -23,7 +23,7 @@ export function ValuePillsSection({
         {locations.map((location) => (
           <div
             key={`${title}-${location.id}`}
-            className={`rounded-full px-2 py-1.5 text-center text-[11px] font-semibold text-white ${LOCATION_META[location.id].pillClass}`}
+            className={`rounded-full px-2 py-1.5 text-center text-[11px] font-semibold text-text-hover-dark ${LOCATION_META[location.id].pillClass}`}
           >
             {formatter(valueAccessor(location), location)}
           </div>
