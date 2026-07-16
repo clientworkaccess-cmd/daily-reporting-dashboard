@@ -60,7 +60,7 @@ export function MiniTrendChart({ lines, dayCount, locationId }: MiniTrendChartPr
     labels,
     datasets: normalizedLines.map((series, index) => {
       const total = normalizedLines.length;
-      const opacity = total > 1 ? (0.40 + (index / (total - 1)) * 0.55) : 1;
+      const opacity = total > 1 ? (0.30 + (index / total) * 0.75) : 1;
       const opacityHex = Math.round(opacity * 255).toString(16).padStart(2, "0");
       const borderColor = baseColorHex.startsWith("#") ? (baseColorHex + opacityHex) : baseColorHex;
 
