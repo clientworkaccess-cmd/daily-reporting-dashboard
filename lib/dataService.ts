@@ -115,7 +115,7 @@ const hasMetricRowData = (row: any, location: string, metricId: string): boolean
             case 'occupancy': return hasValue(row.occupancy_occupied_pct_units);
             case 'arrears': return hasAnyFieldValue(row, ['delinquent_units_count', 'delinquency_total', 'aging_total_amount']);
             case 'insurance': return hasAnyFieldValue(row, ['tenants_insurance_count', 'receipts_insurance_mtd']);
-            case 'autopay': return hasAnyFieldValue(row, ['tenants_autobilled_count', 'deposits_ach_mtd', 'deposits_debit_mtd']);
+            case 'autopay': return hasAnyFieldValue(row, ['tenants_autopay_pct', 'tenants_autobilled_count']);
             case 'leads': return hasAnyFieldValue(row, ['leads_sparefoot_daily', 'leads_phone_daily', 'leads_web_daily', 'leads_walk_in_daily']);
             case 'forecast': return hasValue(row.receipts_total_mtd);
             default: return hasKpiRowData(row, location);
@@ -270,6 +270,9 @@ export async function fetchReportingData(location: string, view: string, metric:
                 }
                 case 'autopay': {
                     if (!isSalesActive) return null;
+                    // Use direct autopay_pct column if available, else fallback to ratio
+                    const autopayPct = parseFloat(row.tenants_autopay_pct);
+                    if (!isNaN(autopayPct) && autopayPct > 0) return autopayPct;
                     const autopayTenants = parseFloat(row.tenants_autobilled_count) || 0;
                     const occupied = parseFloat(row.occupancy_occupied_units) || 1;
                     return occupied > 0 ? (autopayTenants / occupied) * 100 : 0;
@@ -465,6 +468,7 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
         const currentMonthArrears = (parseFloat(row.aging_0_10_amount) || 0) + (parseFloat(row.aging_11_30_amount) || 0);
         const insuranceCount = parseFloat(row.tenants_insurance_count) || 0;
         const insuranceRevenue = parseCurrency(row.receipts_insurance_mtd);
+        const autopayPctDirect = parseFloat(row.tenants_autopay_pct);
         const autopayTenants = parseFloat(row.tenants_autobilled_count) || 0;
 
         // last_revenue: derive from previous month entry if available
@@ -498,7 +502,10 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
                 ? (insuranceCount / occupiedUnits) * 100
                 : (revenueMTD > 0 ? (insuranceRevenue / revenueMTD) * 100 : 0)
             ).toFixed(1),
-            autopay: ((autopayTenants / occupiedUnits) * 100).toFixed(1),
+            autopay: (!isNaN(autopayPctDirect) && autopayPctDirect > 0
+                ? autopayPctDirect
+                : (autopayTenants / occupiedUnits) * 100
+            ).toFixed(1),
             cac: '145.20',
             ltv: '2450.00',
             leads: leadsTotal,
