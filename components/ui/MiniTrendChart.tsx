@@ -107,10 +107,13 @@ export function MiniTrendChart({ lines, dayCount, locationId }: MiniTrendChartPr
         titleColor: tooltipTitle,
         bodyColor: tooltipBody,
         displayColors: false,
+        filter: (item: any) => item.raw !== null && item.raw !== undefined && !Number.isNaN(Number(item.raw)),
         callbacks: {
-          title: (items: any[]) => `Day ${items[0]?.label ?? ""}`,
-          label: (ctx: any) =>
-            `${ctx.dataset?.label ?? ""}: ${Number(ctx.raw).toFixed(1)}`,
+          title: (items: any[]) => (items && items.length > 0 ? `Day ${items[0]?.label ?? ""}` : ""),
+          label: (ctx: any) => {
+            if (ctx.raw === null || ctx.raw === undefined) return "";
+            return `${ctx.dataset?.label ?? ""}: ${Number(ctx.raw).toFixed(1)}`;
+          },
         },
       },
     },
