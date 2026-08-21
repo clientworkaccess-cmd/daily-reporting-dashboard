@@ -262,9 +262,9 @@ export const FALLBACK_DASHBOARD: DashboardState = {
       arrears: 0, insurance: 0, autopay: 0, leads: 0,
     }),
     catawba: createFallbackLocation("catawba", {
-      revenue: 0, lastRevenue: null, forecast: 0,
-      occupancy: 0, moveIns: 0, moveOuts: 0,
-      arrears: 0, insurance: 0, autopay: 0, leads: 0,
+      revenue: 19000, lastRevenue: 17600, forecast: 19000,
+      occupancy: 92.6, moveIns: 9, moveOuts: 6,
+      arrears: 3.4, insurance: 29.4, autopay: 69.8, leads: 14,
     }),
     rock_hill: createFallbackLocation("rock_hill", {
       revenue: 14000, lastRevenue: 13200, forecast: 14000,

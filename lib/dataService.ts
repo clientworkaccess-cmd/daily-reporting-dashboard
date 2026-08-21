@@ -22,22 +22,15 @@ const parsePercent = (val: any): number => {
 // ─── New Table Names ──────────────────────────────────────────────────────────
 // Charlotte: daily_reporting_my_hub   (primary key: report_date)
 // Houston:   daily_reporting_storagefms (primary key: report_report_date)
-// Catawba:   daily_management_reports   (location_id: Vn7fLW7aXQNqpS2YLkhd, primary key: report_date)
-const TABLE_MAP: Record<string, string> = {
+const TABLE_MAP: Record<'charlotte' | 'houston', string> = {
     charlotte: 'daily_reporting_my_hub',
     houston: 'daily_reporting_storagefms',
-    catawba: 'daily_management_reports',
 };
 
 // Each location uses a different column name for its date
-const DATE_FIELD: Record<string, string> = {
+const DATE_FIELD: Record<'charlotte' | 'houston', string> = {
     charlotte: 'report_date',
     houston: 'report_report_date',
-    catawba: 'report_date',
-};
-
-const LOCATION_ID_MAP: Record<string, string> = {
-    catawba: 'Vn7fLW7aXQNqpS2YLkhd',
 };
 
 const readField = (row: any, keys: string[]) => {
@@ -72,17 +65,6 @@ const hasKpiRowData = (row: any, location: string): boolean => {
             'paymentinsurance_mtd',
         ]);
     }
-    if (location === 'catawba') {
-        return hasAnyFieldValue(row, [
-            'receipts_total_mtd',
-            'occupancy_occupied_pct_units',
-            'activity_move_ins_mtd',
-            'activity_move_outs_mtd',
-            'delinquent_units_count',
-            'tenants_insurance_count',
-            'tenants_autobilled_count',
-        ]);
-    }
     // Houston
     return hasAnyFieldValue(row, [
         'total_revenue_receipts_mtd',
@@ -115,7 +97,7 @@ const hasMetricRowData = (row: any, location: string, metricId: string): boolean
             case 'occupancy': return hasValue(row.occupancy_occupied_pct_units);
             case 'arrears': return hasAnyFieldValue(row, ['delinquent_units_count', 'delinquency_total', 'aging_total_amount']);
             case 'insurance': return hasAnyFieldValue(row, ['tenants_insurance_count', 'receipts_insurance_mtd']);
-            case 'autopay': return hasAnyFieldValue(row, ['tenants_autopay_pct', 'tenants_autobilled_count']);
+            case 'autopay': return hasAnyFieldValue(row, ['tenants_autobilled_count', 'deposits_ach_mtd', 'deposits_debit_mtd']);
             case 'leads': return hasAnyFieldValue(row, ['leads_sparefoot_daily', 'leads_phone_daily', 'leads_web_daily', 'leads_walk_in_daily']);
             case 'forecast': return hasValue(row.receipts_total_mtd);
             default: return hasKpiRowData(row, location);
@@ -138,29 +120,17 @@ const hasMetricRowData = (row: any, location: string, metricId: string): boolean
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const getTableName = (location: string): string =>
-    TABLE_MAP[location] || TABLE_MAP.charlotte;
+    TABLE_MAP[location === 'charlotte' ? 'charlotte' : 'houston'];
 
 const getDateField = (location: string): string =>
-    DATE_FIELD[location] || DATE_FIELD.charlotte;
+    DATE_FIELD[location === 'charlotte' ? 'charlotte' : 'houston'];
 
 // Parse date strings:
 //   Charlotte: "Monday, February 9, 2026"
 //   Houston:   "Feb 9, 2026" or ISO-like strings
-//   Catawba:   "2026-08-19" (ISO Date format)
 const parseReportDate = (dateStr: string): Date => {
     if (!dateStr) return new Date();
-    const cleaned = dateStr.replace(/^[A-Za-z]+,\s*/, '').trim();
-
-    // Handle YYYY-MM-DD without UTC timezone shifting
-    const isoMatch = cleaned.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-    if (isoMatch) {
-        return new Date(
-            parseInt(isoMatch[1], 10),
-            parseInt(isoMatch[2], 10) - 1,
-            parseInt(isoMatch[3], 10)
-        );
-    }
-
+    const cleaned = dateStr.replace(/^[A-Za-z]+,\s*/, '');
     const d = new Date(cleaned);
     if (!isNaN(d.getTime())) return d;
     return new Date();
@@ -172,12 +142,7 @@ export async function fetchReportingData(location: string, view: string, metric:
     const tableName = getTableName(location);
     const dateField = getDateField(location);
 
-    let query = supabase.from(tableName).select('*');
-    if (LOCATION_ID_MAP[location]) {
-        query = query.eq('location_id', LOCATION_ID_MAP[location]);
-    }
-
-    const { data, error } = await query;
+    const { data, error } = await supabase.from(tableName).select('*');
 
     if (error) {
         console.error('Supabase fetchReportingData error:', error);
@@ -193,7 +158,7 @@ export async function fetchReportingData(location: string, view: string, metric:
 
     const metricFilteredData = sortedData.filter(row => hasMetricRowData(row, location, metric));
 
-    const getMetricValue = (row: any, metricId: string): number | null => {
+    const getMetricValue = (row: any, metricId: string): number => {
         if (location === 'charlotte') {
             switch (metricId) {
                 case 'revenue':
@@ -242,10 +207,7 @@ export async function fetchReportingData(location: string, view: string, metric:
 
             switch (metricId) {
                 case 'revenue': {
-                    // Show MTD cumulative on all days with any MTD value
-                    // This ensures line extends to day 19, 20 even if daily=0
-                    // Tooltip suppression for inactive days is handled via MiniTrendChart filter
-                    return mtd > 0 ? mtd : null;
+                    return isSalesActive ? mtd : null;
                 }
                 case 'move_in_out': {
                     const moveIns = parseInt(row.activity_move_ins_mtd) || 0;
@@ -255,35 +217,27 @@ export async function fetchReportingData(location: string, view: string, metric:
                         ? moveIns - moveOuts
                         : null;
                 }
-                case 'occupancy': {
-                    // Occupancy: show every day — value exists regardless of daily sales
-                    const pct = parsePercent(row.occupancy_occupied_pct_units);
-                    return !isNaN(pct) && pct > 0 ? pct : null;
-                }
+                case 'occupancy':
+                    return isSalesActive ? parsePercent(row.occupancy_occupied_pct_units) : null;
                 case 'arrears': {
-                    // Arrears: show every day that has aging data
-                    const agingPct = parseFloat(row.summary_json?.aging?.total?.pctGross);
-                    if (!isNaN(agingPct)) return agingPct;
-                    const totalArrears = parseFloat(row.aging_total_amount) || 0;
-                    const occupied = parseFloat(row.occupancy_occupied_units) || 1;
-                    return (totalArrears / occupied);
+                    if (!isSalesActive) return null;
+                    const currentMonthArrears = (parseFloat(row.aging_0_10_amount) || 0) + (parseFloat(row.aging_11_30_amount) || 0);
+                    return mtd > 0 ? (currentMonthArrears / mtd) * 100 : 0;
                 }
                 case 'insurance': {
-                    // Insurance: show every day — count/occupied doesn't depend on daily sales
+                    if (!isSalesActive) return null;
                     const insuranceCount = parseFloat(row.tenants_insurance_count) || 0;
                     const occupied = parseFloat(row.occupancy_occupied_units) || 1;
                     const insuranceRevenue = parseCurrency(row.receipts_insurance_mtd);
                     return insuranceCount > 0
                         ? (insuranceCount / occupied) * 100
-                        : (mtd > 0 ? (insuranceRevenue / mtd) * 100 : null);
+                        : (mtd > 0 ? (insuranceRevenue / mtd) * 100 : 0);
                 }
                 case 'autopay': {
-                    // Autopay: show every day — ratio doesn't depend on daily sales
-                    const autopayPct = parseFloat(row.tenants_autopay_pct);
-                    if (!isNaN(autopayPct) && autopayPct > 0) return autopayPct;
+                    if (!isSalesActive) return null;
                     const autopayTenants = parseFloat(row.tenants_autobilled_count) || 0;
                     const occupied = parseFloat(row.occupancy_occupied_units) || 1;
-                    return occupied > 0 ? (autopayTenants / occupied) * 100 : null;
+                    return occupied > 0 ? (autopayTenants / occupied) * 100 : 0;
                 }
                 case 'leads': {
                     const totalLeads = (parseInt(row.leads_web_daily) || 0)
@@ -383,12 +337,7 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
     const tableName = getTableName(location);
     const dateField = getDateField(location);
 
-    let query = supabase.from(tableName).select('*');
-    if (LOCATION_ID_MAP[location]) {
-        query = query.eq('location_id', LOCATION_ID_MAP[location]);
-    }
-
-    const { data, error } = await query;
+    const { data, error } = await supabase.from(tableName).select('*');
 
     if (error || !data || data.length === 0) return null;
 
@@ -476,7 +425,6 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
         const currentMonthArrears = (parseFloat(row.aging_0_10_amount) || 0) + (parseFloat(row.aging_11_30_amount) || 0);
         const insuranceCount = parseFloat(row.tenants_insurance_count) || 0;
         const insuranceRevenue = parseCurrency(row.receipts_insurance_mtd);
-        const autopayPctDirect = parseFloat(row.tenants_autopay_pct);
         const autopayTenants = parseFloat(row.tenants_autobilled_count) || 0;
 
         // last_revenue: derive from previous month entry if available
@@ -500,26 +448,17 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
                        + (parseInt(r.leads_walk_in_daily) || 0);
         }, 0);
 
-            // Arrears: use summary_json.aging.total.pctGross (accurate %) with fallback
-            const agingPctGross = parseFloat(row.summary_json?.aging?.total?.pctGross);
-            const arrearsPct = !isNaN(agingPctGross)
-                ? agingPctGross
-                : (revenueMTD > 0 ? (currentMonthArrears / revenueMTD) * 100 : 0);
-
         metrics = {
             revenue: revenueMTD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             last_revenue: lastRevenue,
             move_in_out: `${moveIns} / ${moveOuts}`,
             occupancy: parsePercent(row.occupancy_occupied_pct_units).toFixed(1),
-            arrears: arrearsPct.toFixed(1),
+            arrears: (revenueMTD > 0 ? (currentMonthArrears / revenueMTD) * 100 : 0).toFixed(1),
             insurance: (insuranceCount > 0
                 ? (insuranceCount / occupiedUnits) * 100
                 : (revenueMTD > 0 ? (insuranceRevenue / revenueMTD) * 100 : 0)
             ).toFixed(1),
-            autopay: (!isNaN(autopayPctDirect) && autopayPctDirect > 0
-                ? autopayPctDirect
-                : (autopayTenants / occupiedUnits) * 100
-            ).toFixed(1),
+            autopay: ((autopayTenants / occupiedUnits) * 100).toFixed(1),
             cac: '145.20',
             ltv: '2450.00',
             leads: leadsTotal,
