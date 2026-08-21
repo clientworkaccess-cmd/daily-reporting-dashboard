@@ -242,7 +242,10 @@ export async function fetchReportingData(location: string, view: string, metric:
 
             switch (metricId) {
                 case 'revenue': {
-                    return isSalesActive ? mtd : null;
+                    // Show MTD cumulative on all days with any MTD value
+                    // This ensures line extends to day 19, 20 even if daily=0
+                    // Tooltip suppression for inactive days is handled via MiniTrendChart filter
+                    return mtd > 0 ? mtd : null;
                 }
                 case 'move_in_out': {
                     const moveIns = parseInt(row.activity_move_ins_mtd) || 0;
@@ -252,30 +255,35 @@ export async function fetchReportingData(location: string, view: string, metric:
                         ? moveIns - moveOuts
                         : null;
                 }
-                case 'occupancy':
-                    return isSalesActive ? parsePercent(row.occupancy_occupied_pct_units) : null;
+                case 'occupancy': {
+                    // Occupancy: show every day — value exists regardless of daily sales
+                    const pct = parsePercent(row.occupancy_occupied_pct_units);
+                    return !isNaN(pct) && pct > 0 ? pct : null;
+                }
                 case 'arrears': {
-                    if (!isSalesActive) return null;
-                    const currentMonthArrears = (parseFloat(row.aging_0_10_amount) || 0) + (parseFloat(row.aging_11_30_amount) || 0);
-                    return mtd > 0 ? (currentMonthArrears / mtd) * 100 : 0;
+                    // Arrears: show every day that has aging data
+                    const agingPct = parseFloat(row.summary_json?.aging?.total?.pctGross);
+                    if (!isNaN(agingPct)) return agingPct;
+                    const totalArrears = parseFloat(row.aging_total_amount) || 0;
+                    const occupied = parseFloat(row.occupancy_occupied_units) || 1;
+                    return (totalArrears / occupied);
                 }
                 case 'insurance': {
-                    if (!isSalesActive) return null;
+                    // Insurance: show every day — count/occupied doesn't depend on daily sales
                     const insuranceCount = parseFloat(row.tenants_insurance_count) || 0;
                     const occupied = parseFloat(row.occupancy_occupied_units) || 1;
                     const insuranceRevenue = parseCurrency(row.receipts_insurance_mtd);
                     return insuranceCount > 0
                         ? (insuranceCount / occupied) * 100
-                        : (mtd > 0 ? (insuranceRevenue / mtd) * 100 : 0);
+                        : (mtd > 0 ? (insuranceRevenue / mtd) * 100 : null);
                 }
                 case 'autopay': {
-                    if (!isSalesActive) return null;
-                    // Use direct autopay_pct column if available, else fallback to ratio
+                    // Autopay: show every day — ratio doesn't depend on daily sales
                     const autopayPct = parseFloat(row.tenants_autopay_pct);
                     if (!isNaN(autopayPct) && autopayPct > 0) return autopayPct;
                     const autopayTenants = parseFloat(row.tenants_autobilled_count) || 0;
                     const occupied = parseFloat(row.occupancy_occupied_units) || 1;
-                    return occupied > 0 ? (autopayTenants / occupied) * 100 : 0;
+                    return occupied > 0 ? (autopayTenants / occupied) * 100 : null;
                 }
                 case 'leads': {
                     const totalLeads = (parseInt(row.leads_web_daily) || 0)
@@ -492,12 +500,18 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
                        + (parseInt(r.leads_walk_in_daily) || 0);
         }, 0);
 
+            // Arrears: use summary_json.aging.total.pctGross (accurate %) with fallback
+            const agingPctGross = parseFloat(row.summary_json?.aging?.total?.pctGross);
+            const arrearsPct = !isNaN(agingPctGross)
+                ? agingPctGross
+                : (revenueMTD > 0 ? (currentMonthArrears / revenueMTD) * 100 : 0);
+
         metrics = {
             revenue: revenueMTD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             last_revenue: lastRevenue,
             move_in_out: `${moveIns} / ${moveOuts}`,
             occupancy: parsePercent(row.occupancy_occupied_pct_units).toFixed(1),
-            arrears: (revenueMTD > 0 ? (currentMonthArrears / revenueMTD) * 100 : 0).toFixed(1),
+            arrears: arrearsPct.toFixed(1),
             insurance: (insuranceCount > 0
                 ? (insuranceCount / occupiedUnits) * 100
                 : (revenueMTD > 0 ? (insuranceRevenue / revenueMTD) * 100 : 0)

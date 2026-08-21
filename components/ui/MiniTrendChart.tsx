@@ -107,7 +107,21 @@ export function MiniTrendChart({ lines, dayCount, locationId }: MiniTrendChartPr
         titleColor: tooltipTitle,
         bodyColor: tooltipBody,
         displayColors: false,
-        filter: (item: any) => item.raw !== null && item.raw !== undefined && !Number.isNaN(Number(item.raw)),
+        filter: (item: any) => {
+            if (item.raw === null || item.raw === undefined || Number.isNaN(Number(item.raw))) return false;
+            // Hide tooltip on carry-over days (same value as previous defined point = no new activity)
+            const dataArr = item.dataset?.data as Array<number | null>;
+            if (dataArr) {
+              const idx = item.dataIndex;
+              for (let i = idx - 1; i >= 0; i--) {
+                const prev = dataArr[i];
+                if (prev !== null && prev !== undefined && !Number.isNaN(Number(prev))) {
+                  return Number(prev) !== Number(item.raw); // hide if same as last defined value
+                }
+              }
+            }
+            return true;
+          },
         callbacks: {
           title: (items: any[]) => (items && items.length > 0 ? `Day ${items[0]?.label ?? ""}` : ""),
           label: (ctx: any) => {
