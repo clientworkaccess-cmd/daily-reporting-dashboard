@@ -20,17 +20,25 @@ const parsePercent = (val: any): number => {
 };
 
 // ─── New Table Names ──────────────────────────────────────────────────────────
-// Charlotte: daily_reporting_my_hub   (primary key: report_date)
-// Houston:   daily_reporting_storagefms (primary key: report_report_date)
-const TABLE_MAP: Record<'charlotte' | 'houston', string> = {
+// Charlotte: daily_reporting_my_hub      (primary key: report_date)
+// Houston:   daily_reporting_storagefms  (primary key: report_report_date)
+// Catawba:   daily_management_reports    (location_id: Vn7fLW7aXQNqpS2YLkhd, primary key: report_date)
+const TABLE_MAP: Record<string, string> = {
     charlotte: 'daily_reporting_my_hub',
     houston: 'daily_reporting_storagefms',
+    catawba: 'daily_management_reports',
 };
 
 // Each location uses a different column name for its date
-const DATE_FIELD: Record<'charlotte' | 'houston', string> = {
+const DATE_FIELD: Record<string, string> = {
     charlotte: 'report_date',
     houston: 'report_report_date',
+    catawba: 'report_date',
+};
+
+// Catawba filters by location_id column
+const LOCATION_ID_MAP: Record<string, string> = {
+    catawba: 'Vn7fLW7aXQNqpS2YLkhd',
 };
 
 const readField = (row: any, keys: string[]) => {
@@ -63,6 +71,16 @@ const hasKpiRowData = (row: any, location: string): boolean => {
             'activity_moveouts_mtd',
             'deposits_achdebit_mtd',
             'paymentinsurance_mtd',
+        ]);
+    }
+    if (location === 'catawba') {
+        return hasAnyFieldValue(row, [
+            'receipts_total_mtd',
+            'occupancy_occupied_pct_units',
+            'activity_move_ins_mtd',
+            'activity_move_outs_mtd',
+            'tenants_insurance_count',
+            'tenants_autobilled_count',
         ]);
     }
     // Houston
@@ -120,17 +138,27 @@ const hasMetricRowData = (row: any, location: string, metricId: string): boolean
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const getTableName = (location: string): string =>
-    TABLE_MAP[location === 'charlotte' ? 'charlotte' : 'houston'];
+    TABLE_MAP[location] ?? TABLE_MAP.charlotte;
 
 const getDateField = (location: string): string =>
-    DATE_FIELD[location === 'charlotte' ? 'charlotte' : 'houston'];
+    DATE_FIELD[location] ?? DATE_FIELD.charlotte;
 
 // Parse date strings:
 //   Charlotte: "Monday, February 9, 2026"
 //   Houston:   "Feb 9, 2026" or ISO-like strings
+//   Catawba:   "2026-08-19" (ISO YYYY-MM-DD — must NOT pass through Date() to avoid UTC offset shift)
 const parseReportDate = (dateStr: string): Date => {
     if (!dateStr) return new Date();
-    const cleaned = dateStr.replace(/^[A-Za-z]+,\s*/, '');
+    const cleaned = dateStr.replace(/^[A-Za-z]+,\s*/, '').trim();
+    // Handle YYYY-MM-DD without UTC timezone shifting
+    const isoMatch = cleaned.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (isoMatch) {
+        return new Date(
+            parseInt(isoMatch[1], 10),
+            parseInt(isoMatch[2], 10) - 1,
+            parseInt(isoMatch[3], 10)
+        );
+    }
     const d = new Date(cleaned);
     if (!isNaN(d.getTime())) return d;
     return new Date();
@@ -142,7 +170,11 @@ export async function fetchReportingData(location: string, view: string, metric:
     const tableName = getTableName(location);
     const dateField = getDateField(location);
 
-    const { data, error } = await supabase.from(tableName).select('*');
+    let query = supabase.from(tableName).select('*');
+    if (LOCATION_ID_MAP[location]) {
+        query = query.eq('location_id', LOCATION_ID_MAP[location]);
+    }
+    const { data, error } = await query;
 
     if (error) {
         console.error('Supabase fetchReportingData error:', error);
@@ -158,7 +190,7 @@ export async function fetchReportingData(location: string, view: string, metric:
 
     const metricFilteredData = sortedData.filter(row => hasMetricRowData(row, location, metric));
 
-    const getMetricValue = (row: any, metricId: string): number => {
+    const getMetricValue = (row: any, metricId: string): number | null => {
         if (location === 'charlotte') {
             switch (metricId) {
                 case 'revenue':
@@ -201,57 +233,46 @@ export async function fetchReportingData(location: string, view: string, metric:
                 default: return 0;
             }
         } else if (location === 'catawba') {
-            const daily = parseCurrency(row.receipts_total_daily);
-            const mtd = parseCurrency(row.receipts_total_mtd);
-            const isSalesActive = daily > 0 || (row.dateObj.getDate() === 1 && mtd > 0);
-
             switch (metricId) {
-                case 'revenue': {
-                    return isSalesActive ? mtd : null;
-                }
-                case 'move_in_out': {
-                    const moveIns = parseInt(row.activity_move_ins_mtd) || 0;
-                    const moveOuts = parseInt(row.activity_move_outs_mtd) || 0;
-                    const dailyMove = (parseInt(row.activity_move_ins_daily) || 0) + (parseInt(row.activity_move_outs_daily) || 0);
-                    return dailyMove > 0 || (row.dateObj.getDate() === 1 && (moveIns > 0 || moveOuts > 0))
-                        ? moveIns - moveOuts
-                        : null;
-                }
+                case 'revenue':
+                    return parseCurrency(row.receipts_total_mtd);
+                case 'move_in_out':
+                    return (parseInt(row.activity_move_ins_mtd) || 0)
+                        - (parseInt(row.activity_move_outs_mtd) || 0);
                 case 'occupancy':
-                    return isSalesActive ? parsePercent(row.occupancy_occupied_pct_units) : null;
+                    return parsePercent(row.occupancy_occupied_pct_units);
                 case 'arrears': {
-                    if (!isSalesActive) return null;
                     const currentMonthArrears = (parseFloat(row.aging_0_10_amount) || 0) + (parseFloat(row.aging_11_30_amount) || 0);
-                    return mtd > 0 ? (currentMonthArrears / mtd) * 100 : 0;
+                    const actualOccupiedRates = parseCurrency(row.actual_occupied_rates);
+                    const mtd = parseCurrency(row.receipts_total_mtd);
+                    return actualOccupiedRates > 0
+                        ? (currentMonthArrears / actualOccupiedRates) * 100
+                        : (mtd > 0 ? (currentMonthArrears / mtd) * 100 : 0);
                 }
                 case 'insurance': {
-                    if (!isSalesActive) return null;
                     const insuranceCount = parseFloat(row.tenants_insurance_count) || 0;
                     const occupied = parseFloat(row.occupancy_occupied_units) || 1;
-                    const insuranceRevenue = parseCurrency(row.receipts_insurance_mtd);
-                    return insuranceCount > 0
-                        ? (insuranceCount / occupied) * 100
-                        : (mtd > 0 ? (insuranceRevenue / mtd) * 100 : 0);
+                    return (insuranceCount / occupied) * 100;
                 }
                 case 'autopay': {
-                    if (!isSalesActive) return null;
+                    const autopayPct = parseFloat(row.tenants_autopay_pct);
+                    if (!isNaN(autopayPct) && autopayPct > 0) return autopayPct;
                     const autopayTenants = parseFloat(row.tenants_autobilled_count) || 0;
                     const occupied = parseFloat(row.occupancy_occupied_units) || 1;
-                    return occupied > 0 ? (autopayTenants / occupied) * 100 : 0;
+                    return (autopayTenants / occupied) * 100;
                 }
-                case 'leads': {
-                    const totalLeads = (parseInt(row.leads_web_daily) || 0)
+                case 'leads':
+                    return (parseInt(row.leads_sparefoot_daily) || 0)
                         + (parseInt(row.leads_phone_daily) || 0)
-                        + (parseInt(row.leads_sparefoot_daily) || 0)
+                        + (parseInt(row.leads_web_daily) || 0)
                         + (parseInt(row.leads_walk_in_daily) || 0);
-                    return totalLeads > 0 ? totalLeads : null;
-                }
                 case 'forecast': {
+                    const mtd = parseCurrency(row.receipts_total_mtd);
                     const day = row.dateObj.getDate();
                     const total = new Date(row.dateObj.getFullYear(), row.dateObj.getMonth() + 1, 0).getDate();
-                    return isSalesActive && day > 0 ? (mtd / day) * total : null;
+                    return day > 0 ? (mtd / day) * total : 0;
                 }
-                default: return null;
+                default: return 0;
             }
         } else {
             // Houston
@@ -337,7 +358,11 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
     const tableName = getTableName(location);
     const dateField = getDateField(location);
 
-    const { data, error } = await supabase.from(tableName).select('*');
+    let query = supabase.from(tableName).select('*');
+    if (LOCATION_ID_MAP[location]) {
+        query = query.eq('location_id', LOCATION_ID_MAP[location]);
+    }
+    const { data, error } = await query;
 
     if (error || !data || data.length === 0) return null;
 
@@ -423,8 +448,9 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
         const moveOuts = parseInt(row.activity_move_outs_mtd) || 0;
         const occupiedUnits = parseFloat(row.occupancy_occupied_units) || 1;
         const currentMonthArrears = (parseFloat(row.aging_0_10_amount) || 0) + (parseFloat(row.aging_11_30_amount) || 0);
+        const actualOccupiedRates = parseCurrency(row.actual_occupied_rates);
         const insuranceCount = parseFloat(row.tenants_insurance_count) || 0;
-        const insuranceRevenue = parseCurrency(row.receipts_insurance_mtd);
+        const autopayPctDirect = parseFloat(row.tenants_autopay_pct);
         const autopayTenants = parseFloat(row.tenants_autobilled_count) || 0;
 
         // last_revenue: derive from previous month entry if available
@@ -453,12 +479,15 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
             last_revenue: lastRevenue,
             move_in_out: `${moveIns} / ${moveOuts}`,
             occupancy: parsePercent(row.occupancy_occupied_pct_units).toFixed(1),
-            arrears: (revenueMTD > 0 ? (currentMonthArrears / revenueMTD) * 100 : 0).toFixed(1),
-            insurance: (insuranceCount > 0
-                ? (insuranceCount / occupiedUnits) * 100
-                : (revenueMTD > 0 ? (insuranceRevenue / revenueMTD) * 100 : 0)
+            arrears: (actualOccupiedRates > 0
+                ? (currentMonthArrears / actualOccupiedRates) * 100
+                : (revenueMTD > 0 ? (currentMonthArrears / revenueMTD) * 100 : 0)
             ).toFixed(1),
-            autopay: ((autopayTenants / occupiedUnits) * 100).toFixed(1),
+            insurance: ((insuranceCount / occupiedUnits) * 100).toFixed(1),
+            autopay: (!isNaN(autopayPctDirect) && autopayPctDirect > 0
+                ? autopayPctDirect
+                : (autopayTenants / occupiedUnits) * 100
+            ).toFixed(1),
             cac: '145.20',
             ltv: '2450.00',
             leads: leadsTotal,

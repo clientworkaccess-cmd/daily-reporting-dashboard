@@ -1,6 +1,6 @@
 // ─── Core type aliases ────────────────────────────────────────────────────────
 
-export type LiveLocation = "charlotte" | "houston";
+export type LiveLocation = "charlotte" | "houston" | "catawba";
 export type LocationKey = LiveLocation | "catawba" | "rock_hill";
 export type ChartMetric = "revenue" | "occupancy" | "arrears" | "insurance" | "autopay";
 export type ChartPoint = number | null;

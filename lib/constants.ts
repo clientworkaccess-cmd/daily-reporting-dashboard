@@ -1,4 +1,4 @@
-import type { LocationKey, ChartMetric } from "@/types/dashboard";
+import type { LocationKey, ChartMetric, LiveLocation } from "@/types/dashboard";
 
 // ─── Location display metadata ────────────────────────────────────────────────
 
@@ -35,7 +35,7 @@ export const LOCATION_META: Record<
 // ─── Ordering ─────────────────────────────────────────────────────────────────
 
 export const LOCATION_ORDER: LocationKey[] = ["charlotte", "houston", "catawba", "rock_hill"];
-export const LIVE_LOCATIONS: Array<"charlotte" | "houston"> = ["charlotte", "houston"];
+export const LIVE_LOCATIONS: LiveLocation[] = ["charlotte", "houston", "catawba"];
 export const CHART_METRICS: ChartMetric[] = ["revenue", "occupancy", "arrears", "insurance", "autopay"];
 
 // ─── Month names ──────────────────────────────────────────────────────────────
