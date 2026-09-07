@@ -568,17 +568,7 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
                 r.dateObj.getMonth() === dateObj.getMonth() &&
                 r.dateObj.getFullYear() === dateObj.getFullYear()
             );
-            const leadsTotal = (dateObj.getFullYear() === 2026 && dateObj.getMonth() === 7 && row._augCumulativeLeads !== undefined)
-                ? row._augCumulativeLeads
-                : monthRows.reduce((sum, r) => {
-                    if (isNewFormatCharlotte(r)) {
-                        return sum + (parseInt(r.leads_web_daily) || 0)
-                                   + (parseInt(r.leads_phone_daily) || 0)
-                                   + (parseInt(r.leads_sparefoot_daily) || 0)
-                                   + (parseInt(r.leads_walk_in_daily) || 0);
-                    }
-                    return sum + (parseInt(r.leads_totals_mtd) || 0);
-                }, 0);
+            const leadsTotal = parseInt(row.leads_total_mtd) || 0;
 
             metrics = {
                 revenue: revenueMTD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
@@ -667,12 +657,7 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
             r.dateObj.getMonth() === dateObj.getMonth() &&
             r.dateObj.getFullYear() === dateObj.getFullYear()
         );
-        const leadsTotal = monthRows.reduce((sum, r) => {
-            return sum + (parseInt(r.leads_web_daily) || 0)
-                       + (parseInt(r.leads_phone_daily) || 0)
-                       + (parseInt(r.leads_sparefoot_daily) || 0)
-                       + (parseInt(r.leads_walk_in_daily) || 0);
-        }, 0);
+        const leadsTotal = parseInt(row.leads_total_mtd) || 0;
 
         metrics = {
             revenue: revenueMTD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
@@ -711,7 +696,7 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
             revenue: revenueMTD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
             last_revenue: lastRevenueRaw == null ? null : parseCurrency(lastRevenueRaw),
             move_in_out: `${moveIns} / ${moveOuts}`,
-            occupancy:parsePercent(row.occupancy_statistics_occupied_unit_pct).toFixed(1),
+            occupancy: parsePercent(row.occupancy_statistics_occupied_unit_pct).toFixed(1),
             arrears: arrearsPercent.toFixed(1),
             insurance: parseCurrency(row.insurance_protection_pct_insured).toFixed(1),
             autopay: revenueMTD > 0 ? ((achMTD / revenueMTD) * 100).toFixed(1) : '0.0',
