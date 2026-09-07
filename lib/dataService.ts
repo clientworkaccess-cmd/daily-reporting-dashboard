@@ -342,11 +342,27 @@ export async function fetchReportingData(location: string, view: string, metric:
                         const occupied = parseFloat(row.occupancy_occupied_units) || 1;
                         return (autopayTenants / occupied) * 100;
                     }
-                    case 'leads':
-                        return (parseInt(row.leads_sparefoot_daily) || 0)
+                    case 'leads': {
+                        if (row.dateObj.getFullYear() === 2026 && row.dateObj.getMonth() === 7 && row._augCumulativeLeads !== undefined) {
+                            return row._augCumulativeLeads;
+                        }
+                        const jsonParsed = (() => {
+                            try { return typeof row.summary_json === 'string' ? JSON.parse(row.summary_json) : row.summary_json; } catch (e) { return null; }
+                        })();
+                        const jsonMtd = jsonParsed?.Leads_Total_MTD;
+                        if (jsonMtd !== undefined && jsonMtd !== null && !isNaN(parseInt(jsonMtd))) {
+                            return parseInt(jsonMtd);
+                        }
+                        return (
+                            (parseInt(row.leads_total_mtd) || 0)
+                            + (parseInt(row.leads_sparefoot_daily) || 0)
                             + (parseInt(row.leads_phone_daily) || 0)
                             + (parseInt(row.leads_web_daily) || 0)
-                            + (parseInt(row.leads_walk_in_daily) || 0);
+                            + (parseInt(row.leads_walk_in_daily) || 0)
+                            + (parseInt(row.leads_walkin_daily) || 0)
+                        );
+                    }
+
                     case 'forecast': {
                         const mtd = parseCurrency(row.receipts_total_mtd);
                         const day = row.dateObj.getDate();
@@ -563,12 +579,29 @@ export async function fetchLatestKPIs(location: string, selectedDate?: string) {
                 ? parseCurrency(previousMonthRow.receipts_total_mtd ?? previousMonthRow.paymenttotals_mtd)
                 : null;
 
-            // Sum of all daily leads for the month
-            const monthRows = meaningfulRows.filter(r =>
-                r.dateObj.getMonth() === dateObj.getMonth() &&
-                r.dateObj.getFullYear() === dateObj.getFullYear()
-            );
-            const leadsTotal = parseInt(row.leads_total_mtd) || 0;
+            const leadsTotal = (() => {
+                if (dateObj.getFullYear() === 2026 && dateObj.getMonth() === 7 && row._augCumulativeLeads !== undefined) {
+                    return row._augCumulativeLeads;
+                }
+                const jsonParsed = (() => {
+                    try { return typeof row.summary_json === 'string' ? JSON.parse(row.summary_json) : row.summary_json; } catch (e) { return null; }
+                })();
+                const jsonMtd = jsonParsed?.Leads_Total_MTD;
+                if (jsonMtd !== undefined && jsonMtd !== null && !isNaN(parseInt(jsonMtd))) {
+                    return parseInt(jsonMtd);
+                }
+                const monthRows = meaningfulRows.filter(r =>
+                    r.dateObj.getMonth() === dateObj.getMonth() &&
+                    r.dateObj.getFullYear() === dateObj.getFullYear()
+                );
+                return monthRows.reduce((sum, r) => {
+                    return sum + (parseInt(r.leads_web_daily) || 0)
+                               + (parseInt(r.leads_phone_daily) || 0)
+                               + (parseInt(r.leads_sparefoot_daily) || 0)
+                               + (parseInt(r.leads_walk_in_daily) || 0)
+                               + (parseInt(r.leads_walkin_daily) || 0);
+                }, 0);
+            })();
 
             metrics = {
                 revenue: revenueMTD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),

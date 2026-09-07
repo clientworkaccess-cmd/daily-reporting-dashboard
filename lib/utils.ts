@@ -282,8 +282,7 @@ export function locationList(
 
 export function leadBubbleCount(leads: number): number {
   if (leads <= 0) return 0;
-  if (leads <= 20) return Math.round(leads);
-  return Math.min(21, Math.max(8, Math.round(leads / 3)));
+  return Math.min(21, Math.round(leads));
 }
 
 // ─── Empty charts helper ──────────────────────────────────────────────────────
